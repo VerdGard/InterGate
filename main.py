@@ -31,12 +31,19 @@ log = logging.getLogger("intergate")
 def load_settings() -> UserSettings:
     db = get_db()
     saved = db.get_setting("user_settings")
+    env_pwd = os.environ.get("WEB_PASSWORD", "")
+    if env_pwd and not (saved or {}).get("web_password"):
+        # 首次启动且未设置管理台密码: 用环境变量作为初始密码
+        from services.secret import hash_password
+        base = dict(saved or {})
+        base["web_password"] = hash_password(env_pwd)
+        saved = base
     if saved:
-        s = UserSettings.from_dict(saved)
-        db.set_setting("user_settings", s.to_dict())
+        s = UserSettings.from_persist_dict(saved)   # 解密敏感字段, 内存保留明文
+        db.set_setting("user_settings", s.to_persist_dict())
         return s
     s = UserSettings()
-    db.set_setting("user_settings", s.to_dict())
+    db.set_setting("user_settings", s.to_persist_dict())
     return s
 
 
@@ -81,6 +88,11 @@ async def prune_loop(gateway: GatewayApp) -> None:
                 log.info("清理过期请求日志: %d 条", n)
         except Exception as e:
             log.warning("清理请求日志失败: %s", e)
+        try:
+            from services.shared_state import cleanup_expired
+            cleanup_expired()
+        except Exception:
+            pass
         await asyncio.sleep(3600)
 
 
@@ -93,9 +105,12 @@ def _run_gateway_worker(settings_dict: dict, port: int, host: str) -> None:
     db = get_db()
     gateway = GatewayApp(settings, db)
 
-    # webhook 回调
+    # webhook / telegram 回调
     gateway.quota.webhook_provider = lambda: (
         settings.webhook_url, settings.webhook_secret, settings.webhook_enabled)
+    gateway.quota.telegram_provider = lambda: (
+        settings.telegram_bot_token, settings.telegram_chat_id,
+        settings.telegram_enabled)
 
     config = uvicorn.Config(
         gateway.app, host=host, port=port,
@@ -120,6 +135,9 @@ async def _run_single_process(settings: UserSettings) -> None:
 
     gateway.quota.webhook_provider = lambda: (
         settings.webhook_url, settings.webhook_secret, settings.webhook_enabled)
+    gateway.quota.telegram_provider = lambda: (
+        settings.telegram_bot_token, settings.telegram_chat_id,
+        settings.telegram_enabled)
 
     gw_cfg = uvicorn.Config(gateway.app, host=settings.host, port=settings.port,
                             log_level="warning", access_log=False)
@@ -141,13 +159,23 @@ async def _run_single_process(settings: UserSettings) -> None:
     servers = [uvicorn.Server(gw_cfg), uvicorn.Server(web_cfg)]
     sync_task = asyncio.create_task(auto_sync_loop(gateway))
     prune_task = asyncio.create_task(prune_loop(gateway))
+    from services.patrol import HealthPatrol
+    patrol = HealthPatrol(gateway, settings.health_patrol_interval)
+    patrol_task = asyncio.create_task(patrol.run_loop())
+    gateway.patrol = patrol
     try:
         await asyncio.gather(*(s.serve() for s in servers),
-                             sync_task, prune_task, return_exceptions=True)
+                             sync_task, prune_task, patrol_task,
+                             return_exceptions=True)
     finally:
         # 优雅关闭: 关闭上游连接池 + 冲刷未落库的批量写
         sync_task.cancel()
         prune_task.cancel()
+        patrol_task.cancel()
+        try:
+            await patrol.aclose()
+        except Exception:
+            pass
         try:
             await gateway.upstream.aclose()
         except Exception as e:
@@ -178,6 +206,9 @@ async def _run_multi_worker(settings: UserSettings) -> None:
 
     gateway.quota.webhook_provider = lambda: (
         settings.webhook_url, settings.webhook_secret, settings.webhook_enabled)
+    gateway.quota.telegram_provider = lambda: (
+        settings.telegram_bot_token, settings.telegram_chat_id,
+        settings.telegram_enabled)
 
     log.info("=" * 56)
     log.info("  InterGate v%s · AI API 智能中转网关 (多 Worker)", APP_VERSION)
@@ -210,6 +241,10 @@ async def _run_multi_worker(settings: UserSettings) -> None:
     web_server = uvicorn.Server(web_cfg)
     sync_task = asyncio.create_task(auto_sync_loop(gateway))
     prune_task = asyncio.create_task(prune_loop(gateway))
+    from services.patrol import HealthPatrol
+    patrol = HealthPatrol(gateway, settings.health_patrol_interval)
+    patrol_task = asyncio.create_task(patrol.run_loop())
+    gateway.patrol = patrol
 
     # 注册信号处理: 主进程收到终止信号时清理子进程
     def _shutdown_workers(*args):
@@ -223,9 +258,14 @@ async def _run_multi_worker(settings: UserSettings) -> None:
 
     try:
         await asyncio.gather(web_server.serve(), sync_task, prune_task,
-                             return_exceptions=True)
+                             patrol_task, return_exceptions=True)
     finally:
         prune_task.cancel()
+        patrol_task.cancel()
+        try:
+            await patrol.aclose()
+        except Exception:
+            pass
         for p in workers:
             if p.is_alive():
                 p.terminate()

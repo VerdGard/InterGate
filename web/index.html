@@ -80,20 +80,63 @@
   --badge-bg:rgba(255,255,255,.4); --switch-off:rgba(120,130,160,.4); --switch-knob:#ffffff;
   --danger-border:rgba(239,68,68,.4); --accent-soft:rgba(47,107,255,.14);
   --toast-bg:rgba(255,255,255,.6); --overlay:rgba(20,30,60,.35);
-  --shadow:0 8px 32px rgba(31,45,80,.18);
-  --radius:16px;
-  --nav-bg:rgba(255,255,255,.38);
+  --shadow:0 10px 34px rgba(31,45,80,.2);
+  --radius:18px;
+  --nav-bg:rgba(255,255,255,.42);
+  /* 玻璃质感专用令牌 */
+  --glass-edge:rgba(255,255,255,.72);      /* 顶部内高光 */
+  --glass-edge-bottom:rgba(255,255,255,.28);/* 底部内反光 */
+  --glass-stroke:rgba(255,255,255,.6);      /* 描边光 */
+  --glass-blur:blur(22px) saturate(185%);
+}
+/* 墨海(手动选择): 深邃蓝黑, 低刺激高对比, 适合夜间长时间使用 */
+:root[data-theme="ocean"]{
+  --bg:#0a1220; --panel:#0f1a2e; --panel2:#0c1626; --border:#1b3050;
+  --text:#dbe8ff; --muted:#7290b8; --accent:#38bdf8; --accent2:#818cf8;
+  --green:#2dd4bf; --red:#fb7185; --yellow:#fbbf24; --orange:#fb923c;
+  --row-border:#13243d; --row-hover:#122036; --chip:#152a47;
+  --chip-green:#0c2f2b; --chip-red:#331823; --chip-yellow:#332a10; --chip-gray:#152035;
+  --badge-bg:#12233d; --switch-off:#233757; --switch-knob:#a5d8ff;
+  --danger-border:#3d2030; --accent-soft:rgba(56,189,248,.1);
+  --toast-bg:#152a47; --overlay:rgba(2,8,20,.65);
+  --shadow:0 8px 28px rgba(0,10,30,.5);
+  --nav-bg:rgba(15,26,46,.92);
+}
+/* 羊皮纸(手动选择): 暖色护眼浅色, 长时间阅读舒适 */
+:root[data-theme="sepia"]{
+  --bg:#f7f1e5; --panel:#fffaf0; --panel2:#f1e8d8; --border:#e2d5bd;
+  --text:#3d3428; --muted:#8a7c66; --accent:#b4653a; --accent2:#8a6db8;
+  --green:#4d9e6a; --red:#c94f4f; --yellow:#b8860b; --orange:#c96a2a;
+  --row-border:#ece2cf; --row-hover:#f4ecdc; --chip:#eee3cd;
+  --chip-green:#dcebdc; --chip-red:#f5dede; --chip-yellow:#f3e8c8; --chip-gray:#ece5d5;
+  --badge-bg:#f0e7d4; --switch-off:#d6c9ae; --switch-knob:#ffffff;
+  --danger-border:#e5b8b8; --accent-soft:rgba(180,101,58,.1);
+  --toast-bg:#fffaf0; --overlay:rgba(61,52,40,.4);
+  --shadow:0 8px 24px rgba(90,70,40,.14);
+  --nav-bg:rgba(255,250,240,.9);
 }
 *{box-sizing:border-box;margin:0;padding:0}
+/* ===== 视觉细节打磨(全主题) ===== */
+::selection{background:var(--accent-soft);color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+*{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{filter:brightness(1.2)}
+::-webkit-scrollbar-track{background:transparent}
+.card{transition:box-shadow .18s ease, border-color .18s ease}
+.btn{transition:filter .15s ease, transform .12s ease}
+.btn:active{transform:scale(.97)}
 body{font-family:-apple-system,"PingFang SC","Noto Sans CJK SC",sans-serif;background:var(--bg);color:var(--text);font-size:14px}
 /* ===== 液态玻璃主题专属样式 ===== */
 /* 彩色光晕背景(固定于视口, 营造玻璃后景的通透感) */
 :root[data-theme="glass"] body{
   background:
-    radial-gradient(1100px 800px at 12% -6%, rgba(120,170,255,.85), transparent 60%),
-    radial-gradient(900px 700px at 100% 8%, rgba(190,140,255,.75), transparent 58%),
-    radial-gradient(1000px 800px at 50% 108%, rgba(120,230,210,.6), transparent 60%),
-    linear-gradient(160deg,#dbe6ff 0%,#e7dcff 48%,#d6f3ec 100%);
+    radial-gradient(1200px 900px at 8% -10%, rgba(130,180,255,.9), transparent 62%),
+    radial-gradient(1000px 820px at 104% 4%, rgba(198,150,255,.78), transparent 58%),
+    radial-gradient(900px 760px at 88% 96%, rgba(255,160,210,.5), transparent 60%),
+    radial-gradient(1100px 860px at 44% 112%, rgba(120,235,210,.62), transparent 62%),
+    linear-gradient(158deg,#dde8ff 0%,#e9dfff 46%,#d8f4ee 100%);
   background-attachment:fixed;
 }
 /* 半透明面板统一加高斯模糊 + 内高光, 呈现玻璃质感 */
@@ -112,8 +155,8 @@ body{font-family:-apple-system,"PingFang SC","Noto Sans CJK SC",sans-serif;backg
 :root[data-theme="glass"] select,
 :root[data-theme="glass"] textarea,
 :root[data-theme="glass"] .toast{
-  -webkit-backdrop-filter:blur(18px) saturate(180%);
-  backdrop-filter:blur(18px) saturate(180%);
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
 }
 :root[data-theme="glass"] .card,
 :root[data-theme="glass"] .stat,
@@ -137,6 +180,125 @@ body{font-family:-apple-system,"PingFang SC","Noto Sans CJK SC",sans-serif;backg
 }
 /* 表格分隔线/悬停在玻璃下更柔和 */
 :root[data-theme="glass"] .kitem{border-bottom-color:rgba(255,255,255,.32)}
+/* ===== 设置分区头部 ===== */
+.sec-head{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--accent);
+  margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.4px}
+.sec-head .sec-ico{font-size:15px}
+.settings-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+/* ===== 输入框内嵌保存按钮 ===== */
+.fsave-wrap{position:relative;display:block;flex:1;min-width:0}
+.fsave-wrap input{padding-right:54px}
+.fsave{position:absolute;right:4px;top:50%;transform:translateY(-50%);z-index:2;padding:4px 10px;font-size:11px;border-radius:7px;border:1px solid var(--border);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(47,107,255,.3)}
+.fsave:hover{filter:brightness(1.1)}
+:root[data-theme="glass"] .fsave{box-shadow:0 2px 10px rgba(47,107,255,.4), inset 0 1px 0 rgba(255,255,255,.4)}
+
+/* ===== 液态玻璃深度增强 ===== */
+:root[data-theme="glass"] .card,
+:root[data-theme="glass"] .stat,
+:root[data-theme="glass"] .modal .box,
+:root[data-theme="glass"] .login-box{
+  background:linear-gradient(160deg,rgba(255,255,255,.5),rgba(255,255,255,.34));
+  border-color:var(--glass-stroke);
+  box-shadow:0 12px 40px rgba(31,45,80,.2), 0 2px 6px rgba(31,45,80,.08),
+             inset 0 1px 0 var(--glass-edge), inset 0 -1px 0 var(--glass-edge-bottom);
+}
+:root[data-theme="glass"] .trow,
+:root[data-theme="glass"] .addr-row,
+:root[data-theme="glass"] .kg,
+:root[data-theme="glass"] .sheet-item,
+:root[data-theme="glass"] .picker-btn,
+:root[data-theme="glass"] .tag,
+:root[data-theme="glass"] .kg-hd,
+:root[data-theme="glass"] th{
+  -webkit-backdrop-filter:blur(12px) saturate(170%);backdrop-filter:blur(12px) saturate(170%);
+}
+:root[data-theme="glass"] table tr:hover td{background:rgba(255,255,255,.34)}
+:root[data-theme="glass"] input:focus,
+:root[data-theme="glass"] select:focus,
+:root[data-theme="glass"] textarea:focus{
+  border-color:rgba(47,107,255,.75);box-shadow:0 0 0 3px rgba(47,107,255,.18);background:rgba(255,255,255,.55)
+}
+:root[data-theme="glass"] .btn{border-color:rgba(255,255,255,.5);box-shadow:0 2px 10px rgba(31,45,80,.08), inset 0 1px 0 rgba(255,255,255,.5)}
+:root[data-theme="glass"] .btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(31,45,80,.16), inset 0 1px 0 rgba(255,255,255,.6)}
+:root[data-theme="glass"] .btn.primary{background:linear-gradient(135deg,rgba(47,107,255,.9),rgba(168,85,247,.9))}
+:root[data-theme="glass"] .modal{background:rgba(45,60,100,.3);-webkit-backdrop-filter:blur(10px) saturate(160%);backdrop-filter:blur(10px) saturate(160%)}
+:root[data-theme="glass"] .sheet-item{
+  background:linear-gradient(160deg,rgba(255,255,255,.5),rgba(255,255,255,.34));
+  border-color:var(--glass-stroke);
+  box-shadow:inset 0 1px 0 var(--glass-edge);
+}
+:root[data-theme="glass"] .sheet-item:hover{background:rgba(255,255,255,.6);border-color:rgba(47,107,255,.55)}
+:root[data-theme="glass"] .sheet-item.sel{background:var(--accent-soft);border-color:rgba(47,107,255,.6)}
+:root[data-theme="glass"] input,
+:root[data-theme="glass"] select,
+:root[data-theme="glass"] textarea,
+:root[data-theme="glass"] .picker-btn{
+  background:rgba(255,255,255,.42);
+  border-color:var(--glass-stroke);
+  box-shadow:inset 0 1px 0 var(--glass-edge), 0 1px 3px rgba(31,45,80,.06);
+}
+:root[data-theme="glass"] input:focus,
+:root[data-theme="glass"] select:focus,
+:root[data-theme="glass"] textarea:focus,
+:root[data-theme="glass"] .picker-btn:hover{
+  background:rgba(255,255,255,.6);
+  border-color:rgba(47,107,255,.7);
+  box-shadow:inset 0 1px 0 var(--glass-edge), 0 0 0 3px rgba(47,107,255,.16);
+}
+:root[data-theme="glass"] .switch{background:rgba(120,130,160,.35);border-color:rgba(255,255,255,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+:root[data-theme="glass"] .switch.on{background:linear-gradient(135deg,rgba(47,107,255,.95),rgba(168,85,247,.9));border-color:rgba(255,255,255,.5)}
+:root[data-theme="glass"] .progress i{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+:root[data-theme="glass"] .cap,.caps .cap{box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+:root[data-theme="glass"] .toast{box-shadow:0 8px 30px rgba(31,45,80,.18), inset 0 1px 0 rgba(255,255,255,.6)}
+:root[data-theme="glass"] .kmenu button:hover{background:rgba(255,255,255,.5)}
+:root[data-theme="glass"] .empty{opacity:.7}
+:root[data-theme="glass"] .led{box-shadow:0 0 10px var(--led-color, var(--green))}
+:root[data-theme="glass"] .sec-head{border-bottom-color:rgba(255,255,255,.4)}
+:root[data-theme="glass"] .settings-bar,
+:root[data-theme="glass"] .sec-head,
+:root[data-theme="glass"] .trow{-webkit-backdrop-filter:blur(14px) saturate(180%);backdrop-filter:blur(14px) saturate(180%)}
+:root[data-theme="glass"] .settings-bar{color:var(--muted)}
+/* 设置子页签玻璃化 */
+:root[data-theme="glass"] .set-tabs button{
+  background:rgba(255,255,255,.4);border-color:var(--glass-stroke);
+  box-shadow:inset 0 1px 0 var(--glass-edge);
+  -webkit-backdrop-filter:blur(10px) saturate(170%);backdrop-filter:blur(10px) saturate(170%);
+}
+:root[data-theme="glass"] .set-tabs button.active{
+  background:linear-gradient(135deg,rgba(47,107,255,.9),rgba(168,85,247,.85));
+  border-color:rgba(255,255,255,.6);color:#fff;font-weight:600;
+  box-shadow:0 4px 14px rgba(47,107,255,.35), inset 0 1px 0 rgba(255,255,255,.4);
+}
+/* 表格玻璃化: 表头/行分隔/悬停 */
+:root[data-theme="glass"] th{
+  background:rgba(255,255,255,.28);
+  border-bottom-color:rgba(255,255,255,.5);
+}
+:root[data-theme="glass"] td{border-bottom-color:rgba(255,255,255,.28)}
+:root[data-theme="glass"] tr:hover td{background:rgba(255,255,255,.42)}
+/* 滚动条玻璃化 */
+:root[data-theme="glass"] ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
+:root[data-theme="glass"] ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.7)}
+/* 代码块/标签玻璃化 */
+:root[data-theme="glass"] code,
+:root[data-theme="glass"] .tag{
+  background:rgba(255,255,255,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
+}
+/* 胶囊导航增强: 更清晰的玻璃边光 */
+:root[data-theme="glass"] nav button.active{
+  background:rgba(255,255,255,.5);
+  border-radius:10px;
+  border-bottom-color:transparent;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7), 0 2px 8px rgba(47,107,255,.15);
+}
+/* ===== 桌面端增强(≥1024px) ===== */
+@media (min-width:1024px){
+  main{max-width:1360px;padding:26px 32px}
+  .cards{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+  .grid2{grid-template-columns:1fr 1fr;column-gap:22px}
+  .trow{transition:box-shadow .18s, transform .18s}
+  .trow:hover{box-shadow:0 6px 20px rgba(31,45,80,.12);transform:translateY(-1px)}
+}
 a{color:var(--accent);text-decoration:none}
 .topbar{display:flex;align-items:center;gap:14px;padding:12px 22px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;flex-wrap:wrap}
 .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px}
@@ -159,6 +321,21 @@ a{color:var(--accent);text-decoration:none}
 .mc-group{display:flex;flex-direction:column;gap:6px}
 /* ===== Key 管理紧凑聚合 ===== */
 .kg{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;background:var(--panel2)}
+/* ===== 租户 Token 紧凑行 ===== */
+.trow{display:flex;align-items:center;gap:14px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);margin-bottom:8px;flex-wrap:wrap}
+.trow .tdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.trow .tdot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.trow .tdot.off{background:var(--muted)}
+.trow .tmain{min-width:130px;flex:1 1 150px}
+.trow .tmain b{display:block;font-size:13px}
+.trow .tmain .tsub{font-size:11px;color:var(--muted);display:block;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow .tstat{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:2px;min-width:90px}
+.trow .tstat .tv{color:var(--text);font-size:12px;font-weight:600}
+.trow .tstat .bar{height:4px;border-radius:3px;background:var(--chip);overflow:hidden;width:80px}
+.trow .tstat .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.trow .tops{display:flex;gap:6px;flex-shrink:0;margin-left:auto}
+@media (max-width:768px){.trow{gap:10px}.trow .tstat{min-width:70px}.trow .tmain{min-width:0;flex:1 1 100%}.trow .tops{margin-left:0;width:100%}.trow .tops .btn{flex:1}}
+
 .kg-hd{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel2);border-bottom:1px solid var(--border)}
 .kg-hd .tag{flex:none}
 .kg-hd .u{flex:1;min-width:0;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -205,6 +382,14 @@ nav button.active{color:var(--text);border-bottom-color:var(--accent);font-weigh
 main{padding:22px;max-width:1200px;margin:0 auto}
 .page{display:none}
 .page.active{display:block}
+/* 设置页子页签 */
+.set-tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;padding:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.set-tabs::-webkit-scrollbar{display:none}
+.set-tabs button{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+  padding:7px 14px;border-radius:999px;font-size:13px;cursor:pointer;white-space:nowrap;transition:all .15s}
+.set-tabs button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.set-pane{display:none}
+.set-pane.active{display:block;animation:fadeUp .28s ease}
 h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
 .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:16px}
@@ -341,6 +526,23 @@ input[type=date].date-input::-webkit-calendar-picker-indicator{opacity:.5}
 .addr-tag{flex-shrink:0;font-size:11px;color:var(--muted);background:var(--chip);padding:2px 8px;border-radius:10px}
 .addr-code{flex:1 1 0;min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;user-select:all}
 .addr-row .btn{flex-shrink:0}
+/* 液态玻璃: 移动端悬浮胶囊导航增强(更通透 + 边光) */
+@media (max-width:768px){
+  :root[data-theme="glass"] nav{
+    border-color:var(--glass-stroke);
+    box-shadow:0 14px 38px rgba(31,45,80,.26), inset 0 1px 0 var(--glass-edge), inset 0 -1px 0 var(--glass-edge-bottom);
+  }
+  :root[data-theme="glass"] nav button.active{
+    background:linear-gradient(135deg,rgba(47,107,255,.92),rgba(168,85,247,.85));
+    color:#fff;
+    box-shadow:0 6px 18px rgba(47,107,255,.4), inset 0 1px 0 rgba(255,255,255,.4);
+  }
+}
+/* 液态玻璃: 顶栏吸附时的毛玻璃加强 */
+:root[data-theme="glass"] .topbar{
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
+}
 /* ========== Android 移动端适配 (≤768px) ========== */
 @media (max-width:768px){
   body{font-size:13px}
@@ -410,6 +612,7 @@ input[type=date].date-input::-webkit-calendar-picker-indicator{opacity:.5}
   <button data-page="dash" class="active">仪表盘</button>
   <button data-page="keys">Key 管理</button>
   <button data-page="models">模型</button>
+  <button data-page="tokens" id="navTokensBtn" style="display:none">租户Token</button>
   <button data-page="logs">请求日志</button>
   <button data-page="settings">设置</button>
 </nav>
@@ -467,7 +670,13 @@ input[type=date].date-input::-webkit-calendar-picker-indicator{opacity:.5}
       </div>
     </div>
     <div class="card">
-      <h2 style="margin-bottom:8px">最近告警</h2>
+      <div class="row mb" style="justify-content:space-between;align-items:center">
+        <h2 style="margin:0">最近告警</h2>
+        <span class="row" style="gap:6px">
+          <button class="btn sm" onclick="ackAllAlerts()">全部确认</button>
+          <button class="btn sm danger" onclick="clearAllAlerts()">清空</button>
+        </span>
+      </div>
       <div id="alertsBox"><div class="empty">暂无告警</div></div>
     </div>
     <div class="card">
@@ -512,6 +721,21 @@ input[type=date].date-input::-webkit-calendar-picker-indicator{opacity:.5}
     </div>
   </div>
 
+  <!-- 租户 Token -->
+  <div id="page-tokens" class="page">
+    <div class="row mb">
+      <h2 style="margin:0">租户 Token <span class="muted" style="font-size:12px" id="tokenInfo"></span></h2>
+      <div class="spacer"></div>
+      <button class="btn sm" id="tokenResetUsageBtn" style="display:none">重置用量</button>
+      <button class="btn primary" id="addTokenBtn">+ 新建 Token</button>
+    </div>
+    <div class="card" style="padding:10px">
+      <div id="tokensCards">
+        <div class="empty">暂无租户 Token。为下游客户端分配独立额度凭证, 防 Key 泄露即全量失控。</div>
+      </div>
+    </div>
+  </div>
+
   <!-- 日志 -->
   <div id="page-logs" class="page">
     <div class="row" style="align-items:center">
@@ -549,47 +773,75 @@ input[type=date].date-input::-webkit-calendar-picker-indicator{opacity:.5}
 
   <!-- 设置 -->
   <div id="page-settings" class="page">
-    <h2>网关设置</h2>
-    <div class="card">
+    <div class="settings-bar">
+      <h2 style="margin:0">网关设置</h2>
+      <span class="muted" style="font-size:12px;margin-left:4px">开关即时保存 · 输入框修改后出现「保存」按钮</span>
+    </div>
+    <div id="restartHint" style="display:none;margin-bottom:16px;padding:12px;border:1px solid var(--yellow);border-radius:10px;background:var(--chip-yellow)">
+      <div class="row" style="align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="flex:1;font-size:13px;color:var(--text);display:inline-flex;align-items:center;gap:6px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> 以下设置已修改,需重启服务才能生效:</span>
+        <button class="btn sm primary" id="restartBtn">立即重启</button>
+        <button class="btn sm" id="dismissRestart">稍后</button>
+      </div>
+      <div id="restartFields" class="muted" style="font-size:11px;margin-top:6px"></div>
+    </div>
+
+    <div class="set-tabs" id="setTabs"><button type="button" data-pane="general" onclick="showSetTab('general')">通用</button><button type="button" data-pane="gateway" onclick="showSetTab('gateway')">网关</button><button type="button" data-pane="security" onclick="showSetTab('security')">安全</button><button type="button" data-pane="perf" onclick="showSetTab('perf')">缓存与限流</button><button type="button" data-pane="alerts" onclick="showSetTab('alerts')">告警与日志</button><button type="button" data-pane="pricing" onclick="showSetTab('pricing')">价格</button><button type="button" data-pane="data" onclick="showSetTab('data')">数据与接入</button></div>
+    <div class="set-pane" data-pane="general">
+<div class="card">
+      <div class="sec-head"><span class="sec-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg></span><b>外观与语言</b></div>
       <div class="grid2">
+        <div><label>界面主题</label>
+          <button type="button" class="picker-btn" id="themeBtn2" onclick="openThemeModal()">
+            <span id="themeName">-</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <div>
+          <label>界面语言</label>
+          <button type="button" class="picker-btn" id="langBtn2" onclick="openLangModal()">
+            <span id="langName">简体中文</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="set-pane" data-pane="gateway">
+<div class="card">
+      <div class="sec-head"><span class="sec-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><b>网关与性能</b></div>
+      <div class="grid3">
         <div><label>监听端口</label><input id="set-port" type="number"></div>
+        <div><label>Worker 进程数</label><input id="set-workers" type="number" min="1" max="16" value="1">
+          <div class="muted" style="font-size:11px;margin-top:3px">&gt;1 多进程,提升并发(需重启)</div></div>
+        <div><label>上游最大连接数</label><input id="set-upstreamMaxConn" type="number" min="1" value="100"></div>
+        <div><label>上游保持连接数</label><input id="set-upstreamKeepalive" type="number" min="0" value="20"></div>
+        <div><label>请求体上限(MB)</label><input id="set-upstreamMaxReq" type="number" min="1" value="32"></div>
+        <div><label>响应体上限(MB)</label><input id="set-upstreamMaxResp" type="number" min="1" value="16"></div>
         <div>
           <label style="display:flex;align-items:center;justify-content:space-between">
-            <span>网关访问 Key</span>
-            <span class="switch-label"><button type="button" class="switch" id="gwKeySwitch" onclick="toggleGwKeyAuth()"></button>启用鉴权</span>
+            <span>后台健康巡检</span>
+            <span class="switch-label"><button type="button" class="switch" id="set-healthPatrolSwitch" onclick="toggleHealthPatrol()"></button>启用</span>
           </label>
-          <input id="set-gatewayKey" placeholder="客户端需带 Authorization: Bearer &lt;key&gt;">
-          <div class="muted" style="font-size:11px;margin-top:3px" id="gwKeyHint">开启时网关要求 Bearer 密钥(仪表盘显示密钥); 关闭时无需 key 即可调用, Key 保留不清空</div>
-          <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border)">
-            <label style="display:flex;align-items:center;justify-content:space-between">
-              <span>附加网关密钥</span>
-              <button type="button" class="picker-btn" id="gwKeysBtn" onclick="openGwKeysModal()">
-                <span id="gwKeysBtnLabel">管理</span>
-                <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-            </label>
-            <div class="muted" style="font-size:11px;margin-top:3px">可设权限: 全部 / 只读 / 限定模型; 修改后需保存设置生效</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+            <input id="set-healthPatrolInterval" type="number" min="15" style="flex:1" title="巡检间隔(秒)"><span class="muted" style="font-size:12px;white-space:nowrap">秒</span>
           </div>
         </div>
         <div>
-          <label>主题</label>
-          <button type="button" class="picker-btn" id="themeBtn2" onclick="openThemeModal()">
-            <span id="themeName">-</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span data-i18n="自动关闭异常 Key">自动关闭异常 Key</span>
+            <span class="switch-label"><button type="button" class="switch" id="set-autoDisableSwitch" onclick="toggleAutoDisable()"></button>启用</span>
+          </label>
+          <div class="muted" style="font-size:11px;margin-top:4px" data-i18n="关闭后失败仅记录与告警, 不会自动禁用或冷却 Key">关闭后失败仅记录与告警, 不会自动禁用或冷却 Key</div>
         </div>
-        <div>
-          <label>负载均衡策略</label>
+      </div>
+    </div>
+<div class="card">
+      <div class="sec-head"><span class="sec-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span><b>路由与同步</b></div>
+      <div class="grid2">
+        <div><label>负载均衡策略</label>
           <button type="button" class="picker-btn" id="strategyBtn" onclick="openStrategyModal()">
-            <span id="strategyName">-</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <span id="strategyName">-</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-        </div>
-        <div><label>日志保留天数</label><input id="set-logDays" type="number"></div>
-        <div>
-          <label>Worker 进程数</label>
-          <input id="set-workers" type="number" min="1" max="16" value="1">
-          <div class="muted" style="font-size:11px;margin-top:3px">>1 时启用多进程模式, 提升并发吞吐(需重启生效)</div>
         </div>
         <div>
           <label style="display:flex;align-items:center;justify-content:space-between">
@@ -597,57 +849,137 @@ input[type=date].date-input::-webkit-calendar-picker-indicator{opacity:.5}
             <span class="switch-label"><button type="button" class="switch" id="set-syncSwitch" onclick="toggleSyncSwitch()"></button>自动同步</span>
           </label>
           <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-            <input id="set-syncInterval" type="number" min="1" style="flex:1" title="同步间隔(分钟)">
-            <span class="muted" style="font-size:12px;white-space:nowrap">分钟</span>
+            <input id="set-syncInterval" type="number" min="1" style="flex:1" title="同步间隔(分钟)"><span class="muted" style="font-size:12px;white-space:nowrap">分钟</span>
           </div>
-          <div class="muted" style="font-size:11px;margin-top:3px">开启后按间隔自动拉取各提供商模型列表; 关闭仅保留手动「同步模型」按钮</div>
         </div>
       </div>
-      <div class="grid3">
+    </div>
+    </div>
+    <div class="set-pane" data-pane="security">
+<div class="card">
+      <div class="sec-head"><span class="sec-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><b>安全与访问</b></div>
+      <div class="grid2">
         <div>
-          <label>缓存开关</label>
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span>网关访问 Key</span>
+            <span class="switch-label"><button type="button" class="switch" id="gwKeySwitch" onclick="toggleGwKeyAuth()"></button>启用鉴权</span>
+          </label>
+          <input id="set-gatewayKey" placeholder="客户端需带 Authorization: Bearer &lt;key&gt;">
+          <div class="muted" style="font-size:11px;margin-top:3px" id="gwKeyHint"></div>
+        </div>
+        <div><label>管理台密码(留空=局域网免密)</label><input id="set-webPwd" type="password"></div>
+        <div>
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span>附加网关密钥</span>
+            <button type="button" class="picker-btn" id="gwKeysBtn" onclick="openGwKeysModal()">
+              <span id="gwKeysBtnLabel">管理</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </label>
+          <div class="muted" style="font-size:11px;margin-top:3px">权限: 全部 / 只读 / 限定模型</div>
+        </div>
+        <div>
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span>JWT 网关鉴权(HS256)</span>
+            <span class="switch-label"><button type="button" class="switch" id="set-jwtSwitch" onclick="toggleJwt()"></button>启用</span>
+          </label>
+          <input id="set-jwtSecret" placeholder="HS256 签名密钥" type="password">
+          <div class="muted" style="font-size:11px;margin-top:3px">接受由该密钥签发的 JWT 作为访问凭证</div>
+        </div>
+        <div>
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span>多租户 Token 体系</span>
+            <span class="switch-label"><button type="button" class="switch" id="set-tokensSwitch" onclick="toggleTokens()"></button>启用</span>
+          </label>
+          <div class="muted" style="font-size:11px;margin-top:3px">为下游客户端分配独立额度/限流/模型白名单; 开启后在导航显示「租户Token」</div>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="set-pane" data-pane="perf">
+<div class="card">
+      <div class="sec-head"><span class="sec-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></span><b>缓存</b></div>
+      <div class="grid3">
+        <div><label>缓存开关</label>
           <button type="button" class="picker-btn" id="cacheBtn" onclick="openCacheModal()">
-            <span id="cacheName">-</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <span id="cacheName">-</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </div>
         <div><label>缓存 TTL(秒)</label><input id="set-cacheTtl" type="number"></div>
         <div><label>缓存条目上限</label><input id="set-cacheMax" type="number"></div>
       </div>
+      <div class="grid2" style="margin-top:8px">
+        <div>
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span>共享缓存(多Worker)</span>
+            <span class="switch-label"><button type="button" class="switch" id="set-sharedCacheSwitch" onclick="toggleSharedCache()"></button>启用</span>
+          </label>
+          <div class="muted" style="font-size:11px;margin-top:3px">多进程共享缓存(SQLite); 单 Worker 无需开启</div>
+        </div>
+      </div>
+    </div>
+<div class="card">
+      <div class="sec-head"><span class="sec-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span><b>限流</b></div>
       <div class="grid3">
         <div><label>IP 限流(次/分钟, 0=不限)</label><input id="set-ipRpm" type="number"></div>
         <div><label>全局限流(次/分钟, 0=不限)</label><input id="set-globalRpm" type="number"></div>
-        <div>
-          <label>自适应 TPM</label>
+        <div><label>自适应 TPM</label>
           <button type="button" class="picker-btn" id="tpmBtn" onclick="openTpmModal()">
-            <span id="tpmName">-</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <span id="tpmName">-</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </div>
       </div>
-      <div class="grid2">
-        <div><label>管理台密码(留空=局域网免密)</label><input id="set-webPwd" type="password"></div>
-        <div><label>额度预警阈值</label><input id="set-quotaWarn" type="number" step="0.05"></div>
-      </div>
-      <div class="grid2">
-        <div><label>上游最大连接数(每提供商)</label><input id="set-upstreamMaxConn" type="number" min="1" value="100"></div>
-        <div><label>上游保持连接数(每提供商)</label><input id="set-upstreamKeepalive" type="number" min="0" value="20"></div>
-      </div>
-      <div class="row mt">
-        <button class="btn primary" id="saveSettings">保存设置</button>
-        <span class="muted" id="setSaveMsg"></span>
-      </div>
-      <div id="restartHint" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--yellow);border-radius:10px;background:var(--chip-yellow)">
-        <div class="row" style="align-items:center;gap:10px;flex-wrap:wrap">
-          <span style="flex:1;font-size:13px;color:var(--text)">⚠ 以下设置已修改,需重启服务才能生效:</span>
-          <button class="btn sm primary" id="restartBtn">立即重启</button>
-          <button class="btn sm" id="dismissRestart">稍后</button>
+      <div class="grid2" style="margin-top:8px">
+        <div>
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span>共享限流(多Worker)</span>
+            <span class="switch-label"><button type="button" class="switch" id="set-sharedRateSwitch" onclick="toggleSharedRate()"></button>启用</span>
+          </label>
+          <div class="muted" style="font-size:11px;margin-top:3px">多进程共享限流计数, 避免额度放大</div>
         </div>
-        <div id="restartFields" class="muted" style="font-size:11px;margin-top:6px"></div>
       </div>
     </div>
-    <div class="card">
-      <h2 style="margin-bottom:6px">价格表(美元/百万 token)</h2>
+    </div>
+    <div class="set-pane" data-pane="alerts">
+<div class="card">
+      <div class="sec-head"><span class="sec-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span><b>用量与告警</b><span style="margin-left:auto;display:flex;align-items:center;gap:8px"><button class="btn sm" onclick="testWebhook()" data-i18n="发送测试推送">发送测试推送</button><span class="muted" id="whMsg" style="font-size:11px"></span></span></div>
+      <div class="grid2">
+        <div><label>额度预警阈值</label><input id="set-quotaWarn" type="number" step="0.05"></div>
+        <div>
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span>Webhook 推送</span>
+            <span class="switch-label"><button type="button" class="switch" id="whSwitch" onclick="toggleWebhook()"></button>启用</span>
+          </label>
+          <input id="whUrl" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...">
+        </div>
+        <div><label>签名 Secret(可选)</label><input id="whSecret" type="password"></div>
+        <div>
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span>Telegram Bot 推送</span>
+            <span class="switch-label"><button type="button" class="switch" id="tgSwitch" onclick="toggleTelegram()"></button>启用</span>
+          </label>
+          <input id="tgToken" placeholder="Bot Token" type="password">
+        </div>
+        <div><label>Telegram Chat ID</label><input id="tgChat" placeholder="如 987654321"></div>
+      </div>
+    </div>
+<div class="card">
+      <div class="sec-head"><span class="sec-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><b>日志</b></div>
+      <div class="grid3">
+        <div><label>日志保留天数</label><input id="set-logDays" type="number"></div>
+        <div>
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span>失败请求审计</span>
+            <span class="switch-label"><button type="button" class="switch" id="set-auditSwitch" onclick="toggleAudit()"></button>启用</span>
+          </label>
+          <div class="muted" style="font-size:11px;margin-top:3px">记录失败请求体摘要</div>
+        </div>
+        <div><label>审计片段上限(KB)</label><input id="set-auditSnippet" type="number" min="1" value="2"></div>
+      </div>
+    </div>
+    </div>
+    <div class="set-pane" data-pane="pricing">
+<div class="card">
+      <div class="sec-head"><span class="sec-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><b>价格表(美元/百万 token)</b></div>
       <p class="muted mb" style="font-size:12px">按模型前缀匹配, 自定义规则优先于内置表; 用于仪表盘费用预估。格式: 前缀 / 输入价 / 输出价</p>
       <div id="pricingList"></div>
       <div class="row mt" style="gap:8px">
@@ -661,55 +993,37 @@ input[type=date].date-input::-webkit-calendar-picker-indicator{opacity:.5}
         <label style="display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:13px">内置价格参考</span>
           <button type="button" class="picker-btn" id="builtinPricingBtn" onclick="openBuiltinPricingModal()">
-            <span id="builtinPricingBtnLabel">查看</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <span id="builtinPricingBtnLabel">查看</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </label>
-        <div class="muted" style="font-size:11px;margin-top:3px">主流国内外模型 · 美元/百万 token · 前缀匹配, 自定义规则优先</div>
       </div>
     </div>
-    <div class="card" style="border-color:var(--green);background:var(--chip-green)">
-      <h2 style="margin-bottom:6px;color:var(--green)">✓ 数据持久化保障</h2>
-      <p class="muted" style="font-size:12px;line-height:1.8">
-        • API Key: AES-256-GCM 加密存储, 重启不丢失<br>
-        • 告警记录: 持久化到 SQLite, 重启后恢复(最多 200 条)<br>
-        • 模型列表: 同步后缓存到数据库, 重启后立即可用(无需等待重新同步)<br>
-        • 模型开关/路由规则: 持久化, 重启不丢失<br>
-        • 缓存/限流计数器/延迟统计: 内存数据, 重启清空(设计如此, 不影响正确性)
-      </p>
     </div>
-    <div class="card">
-      <h2 style="margin-bottom:6px">数据备份 / 导出</h2>
+    <div class="set-pane" data-pane="data">
+<div class="card">
+      <div class="sec-head"><span class="sec-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg></span><b>数据管理</b></div>
       <p class="muted mb" style="font-size:12px">备份包含数据库(Key 加密数据)与主密钥, 请妥善保存。日志与统计可导出 CSV。</p>
       <div class="row" style="gap:8px;flex-wrap:wrap">
         <button class="btn" onclick="makeBackup()">创建备份</button>
         <button class="btn" onclick="exportCsv('logs')">导出日志 CSV</button>
         <button class="btn" onclick="exportCsv('stats')">导出统计 CSV</button>
+        <button class="btn" onclick="downloadCostExport('30d')">导出费用 CSV</button>
+        <button class="btn" onclick="exportConfig()">导出完整配置</button>
+        <button class="btn" onclick="document.getElementById('importConfigInput').click()">导入配置</button>
+        <input type="file" id="importConfigInput" accept="application/json" style="display:none">
       </div>
       <div id="backupList" class="muted" style="font-size:12px;margin-top:8px"></div>
-    </div>
-    <div class="card">
-      <h2 style="margin-bottom:6px">告警推送 (Webhook)</h2>
-      <p class="muted mb" style="font-size:12px">Key 额度耗尽或错误率过高时推送通知(支持企业微信/钉钉/飞书/TG Bot 等自定义机器人地址)。secret 可选, 非空时按 HMAC-SHA256 签名请求体。</p>
-      <div class="grid2">
-        <div>
-          <label style="display:flex;align-items:center;justify-content:space-between">
-            <span>启用推送</span>
-            <span class="switch-label"><button type="button" class="switch" id="whSwitch" onclick="toggleWebhook()"></button>启用</span>
-          </label>
-          <input id="whUrl" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...">
-        </div>
-        <div><label>签名 Secret(可选)</label><input id="whSecret" type="password"></div>
+      <span class="muted" id="cfgMsg" style="font-size:12px"></span>
+      <div style="margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid var(--green);background:var(--chip-green);font-size:12px;color:var(--text)">
+        <b style="color:var(--green);display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> 数据持久化保障</b><br>
+        <span class="muted">API Key · 告警 · 模型列表 · 模型开关/路由 均持久化, 重启不丢失; 缓存/限流计数器为内存数据(设计如此)。</span>
       </div>
-      <div class="row mt"><button class="btn" onclick="testWebhook()">发送测试推送</button><span class="muted" id="whMsg"></span></div>
     </div>
-    <div class="card">
-      <h2 style="margin-bottom:6px">使用方式</h2>
+<div class="card">
+      <div class="sec-head"><span class="sec-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></span><b>使用方式</b></div>
       <p class="muted mb">第三方 AI 应用把 base_url 指向网关地址(点击复制)。手机连同一 WiFi 时用「局域网」地址:</p>
-      <div id="gwAddrs" class="addr-list">
-        <div class="empty" style="padding:12px">正在探测本机地址...</div>
-      </div>
-      <p class="muted mt">并携带 <code>Authorization: Bearer &lt;网关Key&gt;</code>(若设置了网关 Key)。支持强制指定提供商/Key:请求头 <code>x-relay-provider: openai</code>、<code>x-relay-key: key名称</code>。</p>
+      <div id="gwAddrs" class="addr-list"><div class="empty" style="padding:12px">正在探测本机地址...</div></div>
+      <p class="muted mt">携带 <code>Authorization: Bearer &lt;网关Key&gt;</code>(若设置了网关 Key)。强制指定提供商/Key:请求头 <code>x-relay-provider: openai</code>、<code>x-relay-key: key名称</code>。</p>
       <div class="muted" style="font-size:11px;margin:10px 0 6px">常用客户端接入模板(点击复制):</div>
       <div id="clientTemplates" class="client-tpl-list"></div>
       <div class="row mt" style="gap:8px;flex-wrap:wrap">
@@ -718,10 +1032,39 @@ input[type=date].date-input::-webkit-calendar-picker-indicator{opacity:.5}
         <button class="btn" onclick="copyClientTemplate('openwebui')">复制 Open WebUI 配置</button>
         <button class="btn" onclick="exportModelsJson()">导出模型列表 JSON</button>
       </div>
-      <div class="muted" style="font-size:11px;margin-top:8px">ChatBox 设置 → 添加自定义提供方; NextChat 设置 → 接口地址填入网关 /v1; Open WebUI 环境变量 OPENAI_API_BASE_URL 指向网关。</div>
+    </div>
+    </div>
+</div>
+</main>
+
+<div class="modal sheet" id="tokenModal">
+  <div class="box">
+    <div class="sheet-title"><span id="tkTitle">新建 Token</span>
+      <button class="btn sm" onclick="$('tokenModal').classList.remove('open')">关闭</button></div>
+    <div class="grid2">
+      <div><label>名称</label><input id="tkName" placeholder="如: 张三 / 测试环境"></div>
+      <div><label>Token(留空=自动生成 / 更换)</label><input id="tkToken" autocomplete="off"></div>
+    </div>
+    <div class="grid2">
+      <div><label>日额度(美元, 0=不限)</label><input id="tkQuota" type="number" step="0.01" min="0" value="0"></div>
+      <div><label>限流(次/分钟, 0=不限)</label><input id="tkRpm" type="number" min="0" value="0"></div>
+    </div>
+    <div class="grid2">
+      <div><label>允许模型(逗号分隔, 空=全部)</label><input id="tkModels" placeholder="如: gpt-4o, deepseek-chat"></div>
+      <div><label>限定提供商(空=任意)</label><input id="tkProvider" placeholder="如: openai"></div>
+    </div>
+    <div class="grid2">
+      <div><label>备注</label><input id="tkNote"></div>
+      <div><label style="display:flex;align-items:center;gap:8px;margin-top:22px">
+        <button type="button" class="switch" id="tkEnabled" onclick="this.classList.toggle('on');this._v=!this._v"></button>启用
+      </label></div>
+    </div>
+    <div class="row mt" style="gap:8px">
+      <button class="btn primary" id="tkSaveBtn" style="flex:1">保存</button>
+      <button class="btn" onclick="$('tokenModal').classList.remove('open')">取消</button>
     </div>
   </div>
-</main>
+</div>
 
 <div class="modal sheet" id="logModal">
   <div class="box">
@@ -839,6 +1182,23 @@ input[type=date].date-input::-webkit-calendar-picker-indicator{opacity:.5}
   </div>
 </div>
 
+<div class="modal sheet" id="langModal">
+  <div class="box">
+    <div class="sheet-title"><span>界面语言 / Language</span>
+      <button class="btn sm" onclick="closeLangModal()">关闭</button></div>
+    <div class="sheet-list">
+      <button type="button" class="sheet-item" data-lang="zh" onclick="pickLang('zh')">
+        <span class="si-name">简体中文<div class="si-desc">中文界面</div></span>
+        <svg class="si-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+      <button type="button" class="sheet-item" data-lang="en" onclick="pickLang('en')">
+        <span class="si-name">English<div class="si-desc">English UI</div></span>
+        <svg class="si-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="modal sheet" id="themeModal">
   <div class="box">
     <div class="sheet-title">
@@ -856,6 +1216,14 @@ input[type=date].date-input::-webkit-calendar-picker-indicator{opacity:.5}
       </button>
       <button type="button" class="sheet-item" data-theme-opt="dark" onclick="pickTheme('dark')">
         <span class="si-name">深色<div class="si-desc">固定使用深色主题</div></span>
+        <svg class="si-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;display:none"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+      <button type="button" class="sheet-item" data-theme-opt="ocean" onclick="pickTheme('ocean')">
+        <span class="si-name">墨海<div class="si-desc">深邃蓝黑, 低刺激高对比, 适合夜间使用</div></span>
+        <svg class="si-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;display:none"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+      <button type="button" class="sheet-item" data-theme-opt="sepia" onclick="pickTheme('sepia')">
+        <span class="si-name">羊皮纸<div class="si-desc">暖色护眼浅色, 长时间阅读舒适</div></span>
         <svg class="si-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;display:none"><polyline points="20 6 9 17 4 12"/></svg>
       </button>
       <button type="button" class="sheet-item" data-theme-opt="glass" onclick="pickTheme('glass')">
@@ -959,27 +1327,107 @@ input[type=date].date-input::-webkit-calendar-picker-indicator{opacity:.5}
 
 <script>
 const $ = id => document.getElementById(id);
+// ===== i18n 前置定义(必须在任何 T()/renderThemeBtn() 调用之前, 避免 TDZ) =====
+// ---------- 国际化(i18n) ----------
+let LANG='zh';
+const I18N={
+  nav:{zh:['仪表盘','Key 管理','模型','租户Token','请求日志','设置'],
+       en:['Dashboard','Keys','Models','Tokens','Logs','Settings']},
+  dash:{zh:['运行总览','今日请求','今日 Token 用量','Key 数量','缓存命中率',
+            '最近告警','上游健康','用量趋势','价格预估','全部确认','清空'],
+        en:['Overview','Requests Today','Tokens Today','Total Keys','Cache Hit Rate',
+            'Recent Alerts','Upstream Health','Usage Trend','Cost Estimate','Ack All','Clear']},
+  keys:{zh:['API Key 管理','批量测试','添加 Key'],en:['API Keys','Test All','Add Key']},
+  models:{zh:['模型列表','同步模型'],en:['Models','Sync Models']},
+  tokens:{zh:['租户 Token','新建 Token'],en:['Tokens','New Token']},
+  logs:{zh:['请求日志','清空日志','查询'],en:['Request Logs','Clear Logs','Search']},
+  settings:{zh:['网关设置','保存设置','价格表','数据备份 / 导出','告警推送'],
+            en:['Gateway Settings','Save','Pricing','Backup / Export','Alerts (Notify)']},
+  labels:{zh:['提供商','状态码','模型','Key','时间','路径','延迟','Tokens','缓存','启用'],
+          en:['Provider','Status','Model','Key','Time','Path','Latency','Tokens','Cache','Enabled']},
+};
+function tr(group, idx){ return (I18N[group]||{})[LANG]?I18N[group][LANG][idx]:''; }
+// ---------- 完整国际化翻译 ----------
+const EN_TXT={
+  '网关设置':'Gateway Settings','外观与语言':'Appearance & Language','网关与性能':'Gateway & Performance',
+  '安全与访问':'Security & Access','路由与同步':'Routing & Sync','缓存':'Cache','限流':'Rate Limit',
+  '用量与告警':'Usage & Alerts','日志':'Logs','价格表(美元/百万 token)':'Pricing ($/M tokens)',
+  '数据管理':'Data Management','使用方式':'Usage Guide','界面主题':'Theme','界面语言':'Language',
+  '监听端口':'Listen Port','Worker 进程数':'Workers','上游最大连接数':'Upstream Max Connections',
+  '上游保持连接数':'Upstream Keep-Alive','请求体上限(MB)':'Max Request (MB)','响应体上限(MB)':'Max Response (MB)',
+  '后台健康巡检':'Health Patrol','网关访问 Key':'Gateway Key','管理台密码(留空=局域网免密)':'Admin Password (blank=LAN open)',
+  '自动关闭异常 Key':'Auto-disable Failing Keys',
+  '墨海':'Ocean Ink','羊皮纸':'Sepia','主题已切换':'Theme switched',
+  '通用':'General','网关':'Gateway','缓存与限流':'Cache & Rate Limit',
+  '告警与日志':'Alerts & Logs','价格':'Pricing','数据与接入':'Data & Access','关闭后失败仅记录与告警, 不会自动禁用或冷却 Key':'When off, failures are logged/alerted only; keys are never auto-disabled or cooled down',
+  '附加网关密钥':'Extra Gateway Keys','JWT 网关鉴权(HS256)':'JWT Auth (HS256)','多租户 Token 体系':'Multi-tenant Tokens',
+  '负载均衡策略':'Load Balance','模型自动同步':'Model Sync','缓存开关':'Cache','缓存 TTL(秒)':'Cache TTL (s)',
+  '缓存条目上限':'Cache Entries','共享缓存(多Worker)':'Shared Cache (multi-worker)','IP 限流(次/分钟, 0=不限)':'IP Limit (/min, 0=off)',
+  '全局限流(次/分钟, 0=不限)':'Global Limit (/min, 0=off)','自适应 TPM':'Adaptive TPM','共享限流(多Worker)':'Shared Rate Limit',
+  '额度预警阈值':'Quota Warn','Webhook 推送':'Webhook Push','签名 Secret(可选)':'Secret (optional)',
+  'Telegram Bot 推送':'Telegram Bot Push','Telegram Chat ID':"Telegram Chat ID",'日志保留天数':'Log Retention (days)',
+  '失败请求审计':'Failure Audit','审计片段上限(KB)':'Audit Snippet (KB)','保存':'Save','已保存':'Saved',
+  '发送测试推送':'Send Test','清理中...':'Cleaning...','清空':'Clear','全部确认':'Ack All',
+  '仪表盘':'Dashboard','Key 管理':'Keys','模型':'Models','租户Token':'Tokens','请求日志':'Logs','设置':'Settings',
+  '价格表':'Pricing','创建备份':'Backup','导出日志 CSV':'Export Logs CSV','导出统计 CSV':'Export Stats CSV',
+  '导出费用 CSV':'Export Cost CSV','导出完整配置':'Export Config','导入配置':'Import Config',
+  '运行总览':'Overview','今日请求':'Requests Today','今日 Token 用量':'Tokens Today','Key 数量':'Total Keys',
+  '缓存命中率':'Cache Hit Rate','最近告警':'Recent Alerts','上游健康':'Upstream Health','用量趋势':'Usage Trend',
+  '价格预估':'Cost Estimate','刷新':'Refresh','同步模型':'Sync Models','批量测试':'Test All','添加 Key':'Add Key',
+  '新建 Token':'New Token','租户 Token':'Tokens','请求/分钟':'RPM','今日请求':'Requests','允许模型':'Models',
+  '限定提供商':'Provider','备注':'Note','限流':'Rate','模型数':'Models','暂停网关':'Pause','启动网关':'Start',
+  '关闭':'Close','确认':'Confirm','取消':'Cancel','已确认':'Acknowledged','请立即复制保存。明文仅在本次显示, 之后只能重置/更换。':'Copy now. Shown once; otherwise reset/change only.',
+
+  'API Key 管理':'API Keys','+ 添加 Key':'+ Add Key','API Key(明文, 保存后加密)':'API Key (plaintext, encrypted after save)',
+  'Base URL(可空, 覆盖提供商默认)':'Base URL (optional)','Key':'Key','Token 已创建':'Token Created','Token 用量':'Token Usage',
+  'Token(留空=自动生成 / 更换)':'Token (blank=auto / change)','主题':'Theme','优先级(小优先)':'Priority (lower first)',
+  '允许模型(逗号分隔, 空=全部)':'Models (comma, blank=all)','全部':'All','内置价格参考':'Built-in Pricing','分钟':'min',
+  '名称':'Name','名称(可空)':'Name (optional)','启用':'Enable','复制':'Copy','密钥权限':'Key Permission','延迟':'Latency',
+  '开关即时保存 · 输入框修改后出现「保存」按钮':'Switches save instantly · inputs show Save when changed','提供商':'Provider',
+  '无限额度':'Unlimited','日志详情':'Log Detail','日额度(美元, 0=不限)':'Daily Quota (USD, 0=unlimited)','时间':'Time',
+  '权重':'Weight','查看':'View','查询':'Search','检测中...':'Detecting...','模型列表':'Models','模型名称':'Model Name',
+  '模型路由':'Model Routing','每分钟请求上限':'RPM Limit','每日配额(Token)':'Daily Quota (Tokens)','清空日志':'Clear Logs',
+  '点击右侧按钮探测各 Key 上游连通性':'Probe to check upstream connectivity','状态':'Status','界面语言 / Language':'Language',
+  '登录':'Sign In','秒':'sec','稍后':'Later','立即重启':'Restart Now','简体中文':'Chinese','管理':'Manage','缓存命中':'Cache Hit',
+  '网关Key':'Gateway Key','能力':'Capabilities','路径':'Path','选择提供商':'Select Provider','重置用量':'Reset Usage',
+  '限定提供商(空=任意)':'Provider (blank=any)','限流(次/分钟, 0=不限)':'Rate (/min, 0=unlimited)','上一页':'Prev','下一页':'Next',
+  '+ 新建 Token':'+ New Token','暂无租户 Token':'No tokens yet','编辑':'Edit','删除':'Delete','今日用量':'Usage Today',
+  '不限':'Unlimited','任意':'Any','网关暂停':'Paused','运行中':'Running','重启服务':'Restart','确定':'OK',
+'请求':'Requests','停用':'Disabled','自动':'Auto','浅色':'Light','深色':'Dark','液态玻璃':'Glass','主题已切换':'Theme changed',
+  '自动':'Auto','浅色':'Light','深色':'Dark','液态玻璃':'Liquid Glass','主题已切换':'Theme switched','主题':'Theme','关闭':'Close',
+};
+const EN_PH={  '如: 张三 / 测试环境':'e.g. John / test','客户端需带 Authorization: Bearer &lt;key&gt;':'Bearer <key> for clients',
+  '留空=自动生成 / 更换':'blank=auto / change','如: gpt-4o, deepseek-chat':'e.g. gpt-4o, deepseek-chat','如: openai':'e.g. openai',
+  '前缀(如 deepseek)':'prefix (e.g. deepseek)','输入价':'input $','输出价':'output $','管理台密码(留空=局域网免密)':'Admin password',
+
+  '客户端需带 Authorization: Bearer &lt;key&gt;':'Bearer <key> for clients','如: 张三 / 测试环境':'e.g. John / test',
+  '留空=自动生成 / 更换':'blank=auto / change','如: gpt-4o, deepseek-chat':'e.g. gpt-4o, deepseek-chat',
+  '如: openai':'e.g. openai','前缀(如 deepseek)':'prefix (e.g. deepseek)','输入价':'input $','输出价':'output $',
+};
+function T(k){ return LANG==='en' ? (EN_TXT[k]||k) : (k||''); }
+function TP(k){ return LANG==='en' ? (EN_PH[k]||k) : k; }
+
 
 // ---------- 主题(自动/浅/深) ----------
-const THEMES=['auto','light','dark','glass'];
-const THEME_LABEL={auto:'自动',light:'浅色',dark:'深色',glass:'液态玻璃'};
+const THEMES=['auto','light','dark','ocean','sepia','glass'];
+const THEME_LABEL={auto:'自动',light:'浅色',dark:'深色',ocean:'墨海',sepia:'羊皮纸',glass:'液态玻璃'};
 let THEME=localStorage.getItem('ig_theme')||'auto';
 function applyTheme(){
   const root=document.documentElement;
   const meta=$('metaTheme');
-  if(THEME==='auto'){
-    root.removeAttribute('data-theme');
-  }else{
-    root.setAttribute('data-theme',THEME);
-  }
-  const light = THEME==='light' || THEME==='glass'
-    || (THEME==='auto' && matchMedia('(prefers-color-scheme: light)').matches);
-  const metaColor = THEME==='glass' ? '#dbe6ff' : (light?'#f4f6fb':'#0b0f1a');
+  let resolved = THEME;
+  if(resolved==='auto') resolved = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  root.setAttribute('data-theme', resolved);
+  // color-scheme: 让原生控件(滚动条/日期/输入框内部)跟随浅/深色
+  root.style.colorScheme = (resolved==='dark') ? 'dark' : 'light';
+  const light = ['light','glass','sepia'].includes(resolved);
+  const metaColor = {glass:'#dbe6ff', light:'#f4f6fb', sepia:'#f7f1e5',
+                     ocean:'#0a1220'}[resolved] || '#0b0f1a';
   if(meta) meta.setAttribute('content', metaColor);
-  localStorage.setItem('ig_theme',THEME);
+  localStorage.setItem('ig_theme', THEME);
 }
 function renderThemeBtn(){
-  const b=$('themeName'); if(b) b.textContent=THEME_LABEL[THEME]||'自动';
+  const b=$('themeName'); if(b) b.textContent = T(THEME_LABEL[THEME]||'自动');
 }
 function openThemeModal(){
   document.querySelectorAll('#themeModal .sheet-item').forEach(it=>{
@@ -995,7 +1443,7 @@ function pickTheme(v){
   applyTheme();
   renderThemeBtn();
   closeThemeModal();
-  toast('主题已切换: '+THEME_LABEL[THEME]);
+  toast(T('主题已切换')+': '+T(THEME_LABEL[THEME]));
 }
 window.openThemeModal=openThemeModal;
 window.closeThemeModal=closeThemeModal;
@@ -1047,7 +1495,21 @@ const STATUS_TAG = {active:['green','活跃'],inactive:['gray','停用'],exhaust
 let GW_ON=false;
 let GW_IPS={loopback:'127.0.0.1', lan:[]};
 let GW_PORT=51234, WEB_PORT=51235;
-let GW_KEY='', GW_AUTH=false;   // 网关访问密钥 + 鉴权开关
+let GW_KEY='', GW_KEY_MASKED='', GW_AUTH=false;   // 网关访问密钥 + 鉴权开关
+const MASK_DOTS='••••';
+function maskValue(v){ v=String(v==null?'':v); return !v?'':(v.length<=12?MASK_DOTS:v.slice(0,4)+MASK_DOTS+v.slice(-4)); }
+function isMaskValue(v){ return String(v||'').includes(MASK_DOTS); }
+window.maskValue=maskValue; window.isMaskValue=isMaskValue;
+// 网关 Key 明文不再随 /api/settings 下发(避免进入响应体/浏览器缓存), 按需拉取
+async function ensureGwKey(force){
+  if(GW_KEY && !force) return GW_KEY;
+  try{
+    const r=await api('/api/settings/secret/gateway_key');
+    GW_KEY=r.value||'';
+  }catch(e){ GW_KEY=''; }
+  return GW_KEY;
+}
+window.ensureGwKey=ensureGwKey;
 
 function copyText(txt){
   const done=()=>toast('已复制: '+txt);
@@ -1145,13 +1607,21 @@ function updateGwUI(){
   renderGwKeyRow();
 }
 // 仪表盘: 鉴权开启显示网关密钥, 关闭隐藏
-function renderGwKeyRow(){
+// 明文按需拉取: 页面加载时只有掩码, 只有需要展示/复制时才请求 /api/settings/secret
+async function renderGwKeyRow(){
   const row=$('gwKeyRow'); if(!row) return;
-  const show = GW_AUTH && GW_KEY;
+  const show = GW_AUTH && (GW_KEY || GW_KEY_MASKED);
   row.style.display = show?'flex':'none';
   if(show){
-    $('gwKeyCode').textContent=GW_KEY;
-    $('gwKeyCopyBtn').onclick=()=>copyText(GW_KEY);
+    $('gwKeyCode').textContent = GW_KEY || GW_KEY_MASKED;
+    $('gwKeyCopyBtn').onclick = async()=>{
+      const k = await ensureGwKey();
+      if(k) copyText(k); else toast('网关 Key 为空');
+    };
+    if(!GW_KEY){                                  // 首次渲染只显示掩码, 后台补明文
+      const k = await ensureGwKey();
+      if(k && $('gwKeyCode')) $('gwKeyCode').textContent = k;
+    }
   }
 }
 async function toggleGwKeyAuth(){
@@ -1160,12 +1630,14 @@ async function toggleGwKeyAuth(){
   if(next){
     // 开启: 仪表盘显示密钥; 输入框有新值则一并提交生效
     const v=(inp.value||'').trim();
-    if(v && v!==GW_KEY){
+    if(v && !isMaskValue(v) && v!==GW_KEY){
       try{
-        const r=await api('/api/settings',{method:'PUT',body:JSON.stringify({gateway_key:v})});
-        GW_KEY=r.settings?.gateway_key||'';
+        await api('/api/settings',{method:'PUT',body:JSON.stringify({gateway_key:v})});
+        GW_KEY=v;
+        GW_KEY_MASKED=maskValue(v);
       }catch(e){ toast(e.message); return; }
     }
+    await ensureGwKey();
     if(!GW_KEY){
       // 从未设置过密钥: 切到开启态并聚焦输入, 输入后保存生效
       GW_AUTH=true;
@@ -1200,6 +1672,7 @@ function toggleSyncSwitch(){
   SYNC_AUTO = !SYNC_AUTO;
   syncSyncUI();
   if(SYNC_AUTO && !(+($('set-syncInterval')||{value:60}).value)) $('set-syncInterval').value=60;
+  saveSettings({sync_enabled:SYNC_AUTO},true);
 }
 window.toggleSyncSwitch=toggleSyncSwitch;
 function syncGwKeyAuthUI(){
@@ -1266,13 +1739,54 @@ async function loadProviderChart(){
 }
 async function loadAlerts(){
   try{
-    const d=await api('/api/stats');
-    const alerts=d.alerts||[];
+    const d=await api('/api/alerts?limit=30');
+    const alerts=(d.alerts||[]).slice(-12).reverse();
     const box=$('alertsBox');
-    box.innerHTML=alerts.length?alerts.slice(-10).reverse().map(a=>
-      `<div class="row" style="padding:6px 0;border-bottom:1px solid var(--row-border)"><span class="tag red">${a.type}</span><span>${esc(a.message)}</span><span class="muted" style="font-size:12px">${fmtDay(a.ts)}</span></div>`
+    box.innerHTML=alerts.length?alerts.map(a=>
+      `<div class="row" style="padding:6px 0;border-bottom:1px solid var(--row-border)">
+        <span class="tag red">${a.type}</span><span style="flex:1">${esc(a.message)}</span>
+        <span class="muted" style="font-size:12px">${fmtDay(a.ts)}</span>
+        ${a.acknowledged?'<span class="tag gray">已确认</span>':''}
+      </div>`
     ).join('') : '<div class="empty">暂无告警</div>';
   }catch(e){}
+}
+async function ackAllAlerts(){
+  try{
+    const d=await api('/api/alerts?limit=100');
+    for(const a of (d.alerts||[])){ if(!a.acknowledged) await api('/api/alerts/'+a.id+'/ack',{method:'POST',body:'{}'}); }
+    toast('已全部确认'); loadAlerts();
+  }catch(e){ toast(e.message); }
+}
+let _confirmCb=null;
+function sheetConfirm(title, desc, onOk){
+  _confirmCb=onOk;
+  const prev=document.getElementById('sheetConfirm'); if(prev) prev.remove();
+  const box=document.createElement('div'); box.className='modal sheet front'; box.id='sheetConfirm';
+  box.innerHTML=`<div class="box">
+    <div class="sheet-title"><span data-i18n="${title}">${title}</span>
+      <button class="btn sm" onclick="this.closest('.modal').remove()" data-i18n="取消">取消</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px" data-i18n="${desc}">${desc}</p>
+    <div class="row" style="gap:10px">
+      <button class="btn danger" style="flex:1" onclick="runConfirm()" data-i18n="确认">确认</button>
+      <button class="btn" style="flex:1" onclick="this.closest('.modal').remove()" data-i18n="取消">取消</button>
+    </div>
+  </div>`;
+  document.body.appendChild(box);
+  requestAnimationFrame(()=>box.classList.add('open'));
+  box.addEventListener('click', e=>{ if(e.target===box) box.remove(); });
+}
+function runConfirm(){
+  const cb=_confirmCb; _confirmCb=null;
+  const m=document.getElementById('sheetConfirm'); if(m) m.remove();
+  if(cb) cb();
+}
+window.sheetConfirm=sheetConfirm; window.runConfirm=runConfirm;
+async function clearAllAlerts(){
+  sheetConfirm('清空全部告警?', '此操作将删除全部告警记录, 不可恢复。', async ()=>{
+    try{ await api('/api/alerts',{method:'DELETE'}); toast(T('已清空')||'已清空'); loadAlerts(); }
+    catch(e){ toast(e.message); }
+  });
 }
 
 // ---------- Key ----------
@@ -1865,10 +2379,9 @@ function openStrategyModal(){
 }
 function closeStrategyModal(){ $('strategyModal').classList.remove('open'); }
 function pickStrategy(id){
-  STRATEGY=id;
-  renderStrategyBtn();
-  closeStrategyModal();
-  toast('策略已选择: '+strategyMeta(id).name+' (保存后生效)');
+  STRATEGY=id; renderStrategyBtn(); closeStrategyModal();
+  saveSettings({load_balance_strategy:id},true);
+  toast(LANG==='en'?'Strategy saved':'策略已保存: '+strategyMeta(id).name);
 }
 window.openStrategyModal=openStrategyModal;
 window.closeStrategyModal=closeStrategyModal;
@@ -1887,10 +2400,9 @@ function openTpmModal(){
 }
 function closeTpmModal(){ $('tpmModal').classList.remove('open'); }
 function pickTpm(v){
-  TPM=!!v;
-  renderTpmBtn();
-  closeTpmModal();
-  toast('自适应 TPM 已选择: '+(TPM?'开启':'关闭')+' (保存后生效)');
+  TPM=!!v; renderTpmBtn(); closeTpmModal();
+  saveSettings({adaptive_tpm_enabled:TPM},true);
+  toast(LANG==='en'?'TPM saved':'自适应 TPM 已保存: '+(TPM?'开启':'关闭'));
 }
 window.openTpmModal=openTpmModal;
 window.closeTpmModal=closeTpmModal;
@@ -1910,10 +2422,9 @@ function openCacheModal(){
 }
 function closeCacheModal(){ $('cacheModal').classList.remove('open'); }
 function pickCache(v){
-  CACHE_ENABLED=!!v;
-  renderCacheBtn();
-  closeCacheModal();
-  toast('缓存已选择: '+(CACHE_ENABLED?'开启':'关闭')+' (保存后生效)');
+  CACHE_ENABLED=!!v; renderCacheBtn(); closeCacheModal();
+  saveSettings({cache_enabled:CACHE_ENABLED},true);
+  toast(LANG==='en'?'Cache saved':'缓存已保存: '+(CACHE_ENABLED?'开启':'关闭'));
 }
 window.openCacheModal=openCacheModal;
 window.closeCacheModal=closeCacheModal;
@@ -2108,6 +2619,36 @@ async function makeBackup(){
 function exportCsv(which){
   window.location.href='/api/export/'+which;
 }
+function downloadCostExport(period){
+  window.location.href='/api/stats/cost-export?period='+encodeURIComponent(period);
+}
+async function exportConfig(){
+  try{
+    const r=await api('/api/settings/export');
+    const blob=new Blob([JSON.stringify(r,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='intergate-config.json';
+    a.click(); URL.revokeObjectURL(a.href);
+    toast('配置已导出');
+  }catch(e){ toast(e.message); }
+}
+async function importConfig(e){
+  const file=e.target.files&&e.target.files[0];
+  if(!file) return;
+  try{
+    const cfg=JSON.parse(await file.text());
+    const r=await api('/api/settings/import',{method:'POST',body:JSON.stringify(cfg)});
+    $('cfgMsg').textContent=`已导入: 设置 ${r.settings} · Key ${r.keys} · 租户 ${r.tokens}`;
+    toast('配置已导入'); loadSettings(); loadKeys(); loadTokens();
+  }catch(err){ $('cfgMsg').textContent='导入失败: '+err.message; }
+  e.target.value='';
+}
+if(document.getElementById('importConfigInput')){
+  document.getElementById('importConfigInput').onchange=importConfig;
+}
+window.downloadCostExport=downloadCostExport;
+window.exportConfig=exportConfig;
 window.makeBackup=makeBackup; window.exportCsv=exportCsv;
 
 // ---------- 附加网关密钥(底部弹窗) ----------
@@ -2174,13 +2715,18 @@ window.addGwKey=addGwKey; window.toggleGwKey=toggleGwKey; window.delGwKey=delGwK
 
 // ---------- 告警 Webhook ----------
 let WH_ENABLED=false;
-function toggleWebhook(){ WH_ENABLED=!WH_ENABLED; $('whSwitch').classList.toggle('on',WH_ENABLED); }
+function toggleWebhook(){ WH_ENABLED=!WH_ENABLED; $('whSwitch').classList.toggle('on',WH_ENABLED); saveSettings({webhook_enabled:WH_ENABLED},true); }
 async function testWebhook(){
   const url=$('whUrl').value.trim();
-  if(!url){ $('whMsg').textContent='请先填写 Webhook 地址'; return; }
+  const tgTok=$('tgToken').value.trim(), tgChat=$('tgChat').value.trim();
+  if(!url && !(tgTok&&tgChat)){ $('whMsg').textContent='请填写 Webhook 地址或 Telegram Token/Chat'; return; }
   try{
-    const r=await api('/api/webhook/test',{method:'POST',body:JSON.stringify({url,secret:$('whSecret').value})});
-    $('whMsg').textContent=r.ok?'推送成功':'推送失败: '+(r.error||'');
+    const res=await Promise.allSettled([
+      url?api('/api/webhook/test',{method:'POST',body:JSON.stringify({url,secret:$('whSecret').value})}):Promise.resolve({}),
+      tgTok&&tgChat?api('/api/telegram/test',{method:'POST',body:JSON.stringify({token:tgTok,chat_id:tgChat})}):Promise.resolve({})
+    ]);
+    $('whMsg').textContent='测试完成';
+    toast('推送测试完成: '+(res.map(r=>r.status==='fulfilled'?'[成功]':'[失败] '+((r.reason&&r.reason.message)||r.reason)).join(' ')));
   }catch(e){ $('whMsg').textContent='测试失败: '+e.message; }
 }
 window.toggleWebhook=toggleWebhook; window.testWebhook=testWebhook;
@@ -2274,8 +2820,12 @@ window.delPrice=delPrice; window.editPriceKey=editPriceKey; window.editPriceVal=
 async function loadSettings(){
   try{
     const s=await api('/api/settings');
-    $('set-port').value=s.port; $('set-gatewayKey').value=s.gateway_key||'';
-    GW_KEY=s.gateway_key||''; GW_AUTH=!!s.gateway_key_enabled;
+    $('set-port').value=s.port;
+    // 敏感字段后端返回掩码: 输入框显示掩码, 只有用户真正改写时才提交
+    GW_KEY_MASKED = s.gateway_key||'';
+    GW_KEY='';                                   // 明文按需拉取(ensureGwKey)
+    $('set-gatewayKey').value=GW_KEY_MASKED;
+    GW_AUTH=!!s.gateway_key_enabled;
     syncGwKeyAuthUI();
     STRATEGY=s.load_balance_strategy||'round_robin'; renderStrategyBtn();
     $('set-logDays').value=s.log_retention_days;
@@ -2289,46 +2839,173 @@ async function loadSettings(){
     $('set-upstreamMaxConn').value=s.upstream_max_connections||100;
     $('set-upstreamKeepalive').value=s.upstream_max_keepalive||20;
     $('whUrl').value=s.webhook_url||''; $('whSecret').value=s.webhook_secret||'';
+    $('tgToken').value=s.telegram_bot_token||''; $('tgChat').value=s.telegram_chat_id||'';
+    $('tgSwitch').classList.toggle('on', !!s.telegram_enabled);
+    $('set-jwtSecret').value=s.jwt_secret||'';
+    $('set-jwtSwitch').classList.toggle('on', !!s.jwt_enabled);
+    $('set-sharedCacheSwitch').classList.toggle('on', !!s.shared_cache_enabled);
+    $('set-sharedRateSwitch').classList.toggle('on', !!s.shared_rate_limit_enabled);
+    LANG = (s.language==='en'?'en':'zh');
+    applyI18n(); renderLangBtn();
+    $('set-tokensSwitch').classList.toggle('on', !!s.tokens_enabled);
+    $('set-healthPatrolSwitch').classList.toggle('on', !!s.health_patrol_enabled);
+    $('set-healthPatrolInterval').value = s.health_patrol_interval||60;
+    $('set-autoDisableSwitch').classList.toggle('on', s.auto_disable_enabled !== false);
+    $('set-auditSwitch').classList.toggle('on', !!s.audit_failures_enabled);
+    $('set-auditSnippet').value = (s.audit_body_snippet_bytes||2048)/1024;
+    $('set-upstreamMaxReq').value = (s.upstream_max_request_bytes||33554432)/1048576;
+    $('set-upstreamMaxResp').value = (s.upstream_max_response_bytes||16777216)/1048576;
+    updateTokensNav();
+    initFieldSaves(s);
     loadGwKeys();
     $('whSwitch').classList.toggle('on', !!s.webhook_enabled);
   }catch(e){ toast(e.message); }
 }
-$('saveSettings').onclick=async()=>{
+function toggleJwt(){ $('set-jwtSwitch').classList.toggle('on'); saveSettings({jwt_enabled:$('set-jwtSwitch').classList.contains('on')},true); }
+function toggleSharedCache(){ $('set-sharedCacheSwitch').classList.toggle('on'); saveSettings({shared_cache_enabled:$('set-sharedCacheSwitch').classList.contains('on')},true); }
+function toggleSharedRate(){ $('set-sharedRateSwitch').classList.toggle('on'); saveSettings({shared_rate_limit_enabled:$('set-sharedRateSwitch').classList.contains('on')},true); }
+function toggleTelegram(){ $('tgSwitch').classList.toggle('on'); saveSettings({telegram_enabled:$('tgSwitch').classList.contains('on')},true); }
+function toggleTokens(){ $('set-tokensSwitch').classList.toggle('on'); saveSettings({tokens_enabled:$('set-tokensSwitch').classList.contains('on')},true); updateTokensNav(); }
+function toggleHealthPatrol(){ $('set-healthPatrolSwitch').classList.toggle('on'); saveSettings({health_patrol_enabled:$('set-healthPatrolSwitch').classList.contains('on')},true); }
+function toggleAutoDisable(){ $('set-autoDisableSwitch').classList.toggle('on'); saveSettings({auto_disable_enabled:$('set-autoDisableSwitch').classList.contains('on')},true); }
+function toggleAudit(){ $('set-auditSwitch').classList.toggle('on'); saveSettings({audit_failures_enabled:$('set-auditSwitch').classList.contains('on')},true); }
+function updateTokensNav(){
+  const btn=$('navTokensBtn');
+  if(btn) btn.style.display = $('set-tokensSwitch')&&$('set-tokensSwitch').classList.contains('on') ? '' : 'none';
+}
+
+window.toggleJwt=toggleJwt; window.toggleSharedCache=toggleSharedCache;
+window.toggleSharedRate=toggleSharedRate; window.toggleTelegram=toggleTelegram;
+window.toggleTokens=toggleTokens; window.toggleHealthPatrol=toggleHealthPatrol;
+window.toggleAutoDisable=toggleAutoDisable;
+window.toggleAudit=toggleAudit; window.updateTokensNav=updateTokensNav;
+// ===== 保存逻辑: 通用提交 + 字段级保存 =====
+const SET_FIELDS={
+  'set-port':{k:'port',type:'int'},
+  'set-workers':{k:'workers',type:'int'},
+  'set-upstreamMaxConn':{k:'upstream_max_connections',type:'int'},
+  'set-upstreamKeepalive':{k:'upstream_max_keepalive',type:'int'},
+  'set-upstreamMaxReq':{k:'upstream_max_request_bytes',type:'int',div:1048576,mul:1048576},
+  'set-upstreamMaxResp':{k:'upstream_max_response_bytes',type:'int',div:1048576,mul:1048576},
+  'set-healthPatrolInterval':{k:'health_patrol_interval',type:'int'},
+  'set-cacheTtl':{k:'cache_ttl_seconds',type:'int'},
+  'set-cacheMax':{k:'cache_max_entries',type:'int'},
+  'set-ipRpm':{k:'ip_rate_limit_per_minute',type:'int'},
+  'set-globalRpm':{k:'global_rpm_limit',type:'int'},
+  'set-quotaWarn':{k:'quota_warn_threshold',type:'float'},
+  'set-syncInterval':{k:'sync_interval_minutes',type:'int'},
+  'set-logDays':{k:'log_retention_days',type:'int'},
+  'set-auditSnippet':{k:'audit_body_snippet_bytes',type:'int',div:1024,mul:1024},
+  'set-webPwd':{k:'web_password',type:'str',secret:1},
+  'set-jwtSecret':{k:'jwt_secret',type:'str',secret:1},
+  'set-gatewayKey':{k:'gateway_key',type:'str',secret:1},
+  'whUrl':{k:'webhook_url',type:'str'},
+  'whSecret':{k:'webhook_secret',type:'str',secret:1},
+  'tgToken':{k:'telegram_bot_token',type:'str',secret:1},
+  'tgChat':{k:'telegram_chat_id',type:'str'},
+};
+function wrapField(id){
+  const inp=document.getElementById(id); if(!inp) return;
+  if(inp.parentNode && inp.parentNode.classList.contains('fsave-wrap')) return;
+  const wrap=document.createElement('span'); wrap.className='fsave-wrap';
+  inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp);
+  const btn=document.createElement('button'); btn.type='button'; btn.className='fsave';
+  btn.textContent=LANG==='en'?'Save':'保存'; btn.style.display='none'; wrap.appendChild(btn);
+  btn.addEventListener('click',()=>saveField(id,btn));
+  inp.addEventListener('input',()=>{
+    btn.style.display = (inp.value!==(inp.dataset.base||'')) ? '' : 'none';
+  });
+}
+function initFieldSaves(s){
+  if(!s) return;
+  for(const id in SET_FIELDS){
+    const def=SET_FIELDS[id]; let val=s[def.k];
+    if(def.div) val=Math.round(Number(val||0)/def.div);
+    const inp=document.getElementById(id);
+    if(inp){ inp.dataset.base=String(val==null?'':val); wrapField(id); }
+  }
+}
+async function saveField(id,btn){
+  const def=SET_FIELDS[id]; const inp=document.getElementById(id);
+  if(!inp||!def) return;
+  const raw=inp.value;
+  if(def.secret && raw.trim()===''){ toast(LANG==='en'?'Left blank, not saved':'已留空, 未修改'); return; }
+  // 掩码值说明用户没有改动: 不提交, 避免把 "sk-e••••0111" 当成真实密钥存库
+  if(def.secret && isMaskValue(raw)){ toast(LANG==='en'?'Unchanged':'未修改'); return; }
+  let val;
+  if(def.type==='int'){ val=Math.max(0,parseInt(raw)||0); if(def.mul) val*=def.mul; }
+  else if(def.type==='float'){ val=parseFloat(raw)||0; }
+  else val=raw;
+  const body={}; body[def.k]=val;
+  try{
+    const r=await saveSettings(body,true);
+    if(r && r.settings && def.div!==undefined){ inp.value=String(Math.round((r.settings[def.k]||0)/def.div)); }
+    inp.dataset.base=inp.value; if(btn) btn.style.display='none';
+    toast(LANG==='en'?'Saved':'已保存');
+  }catch(e){ toast(e.message); }
+}
+async function saveSettings(body, silent){
+  const payload = body || fullSettingsBody();
+  try{ await saveGwKeys(); }catch(e){}
+  try{
+    const r=await api('/api/settings',{method:'PUT',body:JSON.stringify(payload)});
+    syncGwKeyAuthUI(); updateTokensNav();
+    const hint=$('restartHint');
+    if(r && r.needs_restart && hint){
+      const fields=$('restartFields');
+      const items=Object.entries(r.restart_fields||{}).map(([k,v])=>`${k}: ${JSON.stringify(v.old)} → ${JSON.stringify(v.new)}`).join(' · ');
+      fields.textContent=items||'部分设置';
+      hint.style.display='block';
+    }else if(hint){ hint.style.display='none'; }
+    if(!silent) toast(LANG==='en'?'Saved':'已保存');
+    return r;
+  }catch(e){ toast(e.message); throw e; }
+}
+function fullSettingsBody(){
+  // 敏感字段带掩码时不提交(后端也会丢弃掩码值, 此处提前省略以免覆盖)
+  const secret=(el,trim)=>{
+    const v=(trim?el.value.trim():el.value);
+    return isMaskValue(v)?undefined:v;
+  };
   const body={
     port:+$('set-port').value,
-    // gateway_key 不随保存提交: 避免误清空, 仅通过开关操作更新
     load_balance_strategy:STRATEGY, log_retention_days:+$('set-logDays').value,
     cache_enabled:CACHE_ENABLED, cache_ttl_seconds:+$('set-cacheTtl').value,
     cache_max_entries:+$('set-cacheMax').value, ip_rate_limit_per_minute:+$('set-ipRpm').value,
     global_rpm_limit:+$('set-globalRpm').value, adaptive_tpm_enabled:TPM,
     sync_enabled:SYNC_AUTO, sync_interval_minutes:Math.max(1, +($('set-syncInterval').value)||60),
-    web_password:$('set-webPwd').value, quota_warn_threshold:+$('set-quotaWarn').value,
-    webhook_url:$('whUrl').value.trim(), webhook_secret:$('whSecret').value,
+    quota_warn_threshold:+$('set-quotaWarn').value,
+    webhook_url:$('whUrl').value.trim(),
     webhook_enabled:$('whSwitch').classList.contains('on'),
+    telegram_chat_id:$('tgChat').value.trim(),
+    telegram_enabled:$('tgSwitch').classList.contains('on'),
+    jwt_enabled:$('set-jwtSwitch').classList.contains('on'),
+    shared_cache_enabled:$('set-sharedCacheSwitch').classList.contains('on'),
+    shared_rate_limit_enabled:$('set-sharedRateSwitch').classList.contains('on'),
+    language: (LANG||'zh'),
+    tokens_enabled:$('set-tokensSwitch').classList.contains('on'),
+    health_patrol_enabled:$('set-healthPatrolSwitch').classList.contains('on'),
+    health_patrol_interval:Math.max(15, +($('set-healthPatrolInterval')?$('set-healthPatrolInterval').value:60)||60),
+    auto_disable_enabled:$('set-autoDisableSwitch').classList.contains('on'),
+    audit_failures_enabled:$('set-auditSwitch').classList.contains('on'),
+    audit_body_snippet_bytes:Math.max(1, +($('set-auditSnippet')?$('set-auditSnippet').value:2)||2)*1024,
     workers:+$('set-workers').value||1,
     upstream_max_connections:+$('set-upstreamMaxConn').value||100,
     upstream_max_keepalive:+$('set-upstreamKeepalive').value||20,
+    upstream_max_request_bytes:Math.max(1,+($('set-upstreamMaxReq')?$('set-upstreamMaxReq').value:32)||32)*1048576,
+    upstream_max_response_bytes:Math.max(1,+($('set-upstreamMaxResp')?$('set-upstreamMaxResp').value:16)||16)*1048576,
   };
-  try{ await saveGwKeys(); }catch(e){}
-  try{
-    const r=await api('/api/settings',{method:'PUT',body:JSON.stringify(body)});
-    // 不随保存改 gateway_key: GW_KEY/GW_AUTH 维持原状
-    syncGwKeyAuthUI();
-    $('setSaveMsg').textContent='已保存';
-    setTimeout(()=>$('setSaveMsg').textContent='',3000);
-    // 检测是否需要重启
-    if(r.needs_restart){
-      const hint=$('restartHint');
-      const fields=$('restartFields');
-      const items=Object.entries(r.restart_fields||{}).map(([k,v])=>
-        `${k}: ${JSON.stringify(v.old)} → ${JSON.stringify(v.new)}`).join(' · ');
-      fields.textContent=items||'部分设置';
-      hint.style.display='block';
-    }else{
-      $('restartHint').style.display='none';
-    }
-  }catch(e){ toast(e.message); }
-};
+  const secrets={
+    web_password: secret($('set-webPwd'), false),
+    webhook_secret: secret($('whSecret'), false),
+    telegram_bot_token: secret($('tgToken'), true),
+    jwt_secret: secret($('set-jwtSecret'), true),
+  };
+  for(const k in secrets) if(secrets[k]!==undefined) body[k]=secrets[k];
+  return body;
+}
+window.saveSettings=saveSettings; window.fullSettingsBody=fullSettingsBody;
+window.initFieldSaves=initFieldSaves; window.saveField=saveField;
 
 // ---------- 重启 ----------
 $('restartBtn').onclick=async()=>{
@@ -2360,6 +3037,205 @@ $('loginBtn').onclick=async()=>{
     toast('欢迎回来'); init(); }catch(e){ toast(e.message); }
 };
 
+
+// ---------- 租户 Token ----------
+let TOKENS=[];
+async function loadTokens(){
+  try{
+    const d=await api('/api/tokens');
+    TOKENS=d.tokens||[];
+    renderTokens();
+  }catch(e){ toast(e.message); }
+}
+function tokenCard(t){
+  const on = !!t.enabled;
+  const quota = t.daily_quota_usd>0
+    ? `<span class="tv">$${t.today_used_usd.toFixed(3)} / $${t.daily_quota_usd.toFixed(2)}</span><div class="bar"><i style="width:${Math.min(100,t.quota_ratio*100)}%"></i></div>`
+    : `<span class="tv">无限额度</span>`;
+  const models = (t.models&&t.models.length)
+    ? t.models.slice(0,3).join(', ')+(t.models.length>3?' …':'') : '全部';
+  return `<div class="trow">
+    <span class="tdot ${on?'on':'off'}" title="${on?'启用':'停用'}"></span>
+    <div class="tmain"><b>${t.name}</b><span class="tsub">${t.note||('请求 '+t.today_requests+' 次')}</span></div>
+    <div class="tstat">今日用量${quota}</div>
+    <div class="tstat">限流<span class="tv">${t.max_requests_per_minute>0?t.max_requests_per_minute+'/分':'不限'}</span></div>
+    <div class="tstat">模型<span class="tv" title="${esc(models)}">${models}</span></div>
+    <div class="tstat">提供商<span class="tv">${t.provider||'任意'}</span></div>
+    <div class="tops">
+      <button class="btn sm" onclick="openTokenModal('${t.id}')">编辑</button>
+      <button class="btn sm danger" onclick="deleteToken('${t.id}')">删除</button>
+    </div>
+  </div>`;
+}
+function renderTokens(){
+  $('tokenInfo').textContent = TOKENS.length ? `共 ${TOKENS.length} 个` : '';
+  $('tokensCards').innerHTML = TOKENS.map(tokenCard).join('') || '<div class=\"empty\" data-i18n=\"暂无租户 Token\">暂无租户 Token</div>';
+  applyI18n();
+}
+let EDIT_TOKEN=null;
+function openTokenModal(id){
+  const t = id ? TOKENS.find(x=>x.id===id) : null;
+  EDIT_TOKEN = t||null;
+  $('tkTitle').textContent = t ? '编辑 Token' : '新建 Token';
+  $('tkName').value = t?t.name:'';
+  $('tkToken').value = '';
+  $('tkToken').placeholder = t ? '留空则不更换当前 Token' : '留空则自动生成';
+  $('tkQuota').value = t?t.daily_quota_usd:0;
+  $('tkRpm').value = t?t.max_requests_per_minute:0;
+  $('tkModels').value = t?(t.models||[]).join(', '):'';
+  $('tkProvider').value = t?(t.provider||''):'';
+  $('tkNote').value = t?(t.note||''):'';
+  $('tkEnabled').classList.toggle('on', t?t.enabled:true);
+  $('tokenModal').classList.add('open');
+}
+async function saveToken(){
+  const body={
+    name:$('tkName').value.trim()||'租户',
+    token:$('tkToken').value.trim(),
+    daily_quota_usd:parseFloat($('tkQuota').value)||0,
+    max_requests_per_minute:parseInt($('tkRpm').value)||0,
+    models:$('tkModels').value.split(',').map(s=>s.trim()).filter(Boolean),
+    provider:$('tkProvider').value.trim(),
+    note:$('tkNote').value.trim(),
+    enabled:$('tkEnabled').classList.contains('on'),
+  };
+  try{
+    const d = EDIT_TOKEN
+      ? await api('/api/tokens/'+EDIT_TOKEN.id,{method:'PUT',body:JSON.stringify(body)})
+      : await api('/api/tokens',{method:'POST',body:JSON.stringify(body)});
+    $('tokenModal').classList.remove('open');
+    if(d.plain) showPlainToken(d.plain);
+    toast('已保存'); loadTokens();
+  }catch(e){ toast(e.message); }
+}
+let _plainModal=null;
+function showPlainToken(plain){
+  if(!plain) return;
+  closePlainToken();                       // 确保仅一个实例
+  const box=document.createElement('div'); box.className='modal sheet front'; box.id='plainTokenModal';
+  box.innerHTML=`<div class="box">
+    <div class="sheet-title"><span data-i18n="Token 已创建">Token 已创建</span>
+      <button class="btn sm" onclick="closePlainToken()" data-i18n="关闭">关闭</button></div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px" data-i18n="请立即复制保存。明文仅在本次显示, 之后只能重置/更换。">请立即复制保存。明文仅在本次显示, 之后只能重置/更换。</p>
+    <div class="addr-row"><code class="addr-code" style="flex:1;user-select:all">${plain}</code>
+      <button class="btn sm" onclick="copyText('${plain}');toast(T('已复制')||'已复制')" data-i18n="复制">复制</button></div>
+  </div>`;
+  document.body.appendChild(box);
+  _plainModal=box;
+  requestAnimationFrame(()=>{
+    if(box.__closed) return;               // 已关闭不再打开
+    if(_plainModal!==box) return;          // 已被新实例取代
+    box.classList.add('open');
+  });
+  box.addEventListener('click', function(e){ if(e.target===box) closePlainToken(); });
+}
+function closePlainToken(){
+  const m=document.getElementById('plainTokenModal');
+  if(m){ m.__closed=true; m.remove(); }
+  _plainModal=null;
+}
+window.closePlainToken=closePlainToken;
+async function deleteToken(id){
+  const t=TOKENS.find(x=>x.id===id);
+  if(!t) return;
+  if(!confirm(`删除 Token「${t.name}」?使用该 Token 的客户端将立即失效。`)) return;
+  try{ await api('/api/tokens/'+id,{method:'DELETE'}); toast('已删除'); loadTokens(); }
+  catch(e){ toast(e.message); }
+}
+$('addTokenBtn').onclick=()=>openTokenModal(null);
+$('tkSaveBtn').onclick=saveToken;
+
+function applyI18n(){
+  applyI18nAll();
+  const order=tr('nav',null);
+  const navBtns=document.querySelectorAll('nav button');
+  if(navBtns.length===5){ ['仪表盘','Key 管理','模型','请求日志','设置'].forEach((t,i)=>{
+      if(navBtns[i]) navBtns[i].textContent=tr('nav',i); }); }
+  // 兼容 6 项(加租户)
+  const navArr=document.querySelectorAll('nav button');
+  I18N.nav[LANG].forEach((t,i)=>{ if(navArr[i]) navArr[i].textContent=t; });
+  // 页面标题与按钮(按需)
+  const map={
+    'Key 管理':'keys','批量测试':'testAllBtn','+ 添加 Key':'addKeyBtn',
+    '模型列表':'models','同步模型':'syncBtn2','租户 Token':'tokens','新建 Token':'addTokenBtn',
+    '请求日志':'logs','清空日志':'clearLogsBtn','查询':'logFilterBtn',
+    '运行总览':'','今日请求':'','最近告警':'','上游健康':'','用量趋势':'','价格预估':''
+  };
+  const lb=$('langBtn'); if(lb) lb.textContent = LANG==='zh'?'中/EN':'EN/中';
+}
+function toggleLang(){
+  LANG = LANG==='zh'?'en':'zh';
+  applyI18n();
+  // 异步持久化语言偏好
+  api('/api/settings',{method:'PUT',body:JSON.stringify({language: LANG})}).catch(()=>{});
+  toast(LANG==='en'?'Switched to English':'已切换为中文');
+}
+window.toggleLang=toggleLang; window.applyI18n=applyI18n;
+// 全局 data-i18n / data-i18n-ph 渲染
+const _skipTags=new Set(['INPUT','SELECT','TEXTAREA','SCRIPT','STYLE','CODE','SVG','OPTION']);
+function markI18nNodes(){
+  const w=document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
+  let el;
+  while(el=w.nextNode()){
+    if(_skipTags.has(el.tagName)) continue;
+    if(el.children.length>0 || el.childNodes.length!==1) continue;
+    if(el.dataset&&el.dataset.i18n) continue;
+    const t=(el.textContent||'').trim();
+    if(t && t.length>0 && t.length<=160 && EN_TXT[t]) el.dataset.i18n=t;
+  }
+}
+function applyI18nAll(){
+  markI18nNodes();
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const zh=el.dataset.i18n; if(!zh) return;
+    el.textContent = (LANG==='en') ? (EN_TXT[zh]||zh) : zh;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
+    const k=el.getAttribute('data-i18n-ph');
+    if(k) el.placeholder = (LANG==='en') ? (EN_PH[k]||k) : k;
+  });
+}
+window.T=T; window.TP=TP; window.applyI18nAll=applyI18nAll;
+
+
+// ---------- 界面语言(底部弹窗) ----------
+const LANG_LABEL={zh:'简体中文',en:'English'};
+function renderLangBtn(){ const el=$('langName'); if(el) el.textContent=LANG_LABEL[LANG]||'简体中文'; }
+function openLangModal(){
+  if(!document.querySelector('#langModal')) return;
+  document.querySelectorAll('#langModal .sheet-item').forEach(it=>{
+    const sel=it.dataset.lang===LANG;
+    it.classList.toggle('sel',sel);
+    const ck=it.querySelector('.si-check'); if(ck) ck.style.display=sel?'':'none';
+  });
+  $('langModal').classList.add('open');
+}
+function closeLangModal(){ $('langModal').classList.remove('open'); }
+function pickLang(v){
+  LANG = (v==='en')?'en':'zh';
+  applyI18n(); renderLangBtn(); closeLangModal();
+  saveSettings({language:LANG},true);
+  toast(LANG==='en'?'Switched to English':'已切换为中文');
+}
+window.renderLangBtn=renderLangBtn; window.openLangModal=openLangModal;
+window.closeLangModal=closeLangModal; window.pickLang=pickLang;
+
+// ---------- 设置页子页签 ----------
+function showSetTab(name){
+  document.querySelectorAll('#page-settings .set-pane').forEach(p=>
+    p.classList.toggle('active', p.dataset.pane===name));
+  const tabs=$('setTabs');
+  if(tabs) tabs.querySelectorAll('button').forEach(b=>
+    b.classList.toggle('active', b.dataset.pane===name));
+  try{ localStorage.setItem('ig_settab', name); }catch(e){}
+}
+window.showSetTab=showSetTab;
+(function(){
+  let saved='general';
+  try{ saved=localStorage.getItem('ig_settab')||'general'; }catch(e){}
+  showSetTab(['general','gateway','security','perf','alerts','pricing','data'].includes(saved)?saved:'general');
+})();
+
 // ---------- 导航 ----------
 document.querySelectorAll('nav button').forEach(b=>{
   b.onclick=()=>{
@@ -2368,6 +3244,7 @@ document.querySelectorAll('nav button').forEach(b=>{
     b.classList.add('active'); $('page-'+b.dataset.page).classList.add('active');
     if(b.dataset.page==='keys') loadKeys();
     if(b.dataset.page==='models') loadModels();
+    if(b.dataset.page==='tokens') loadTokens();
     if(b.dataset.page==='logs') loadLogs();
     if(b.dataset.page==='settings') loadSettings();
   };
@@ -2378,8 +3255,9 @@ async function init(){
   try{
     await loadStatus();
     await loadProviders();
-    loadRoutes(); loadKeys(); loadModels(); loadLogs(); loadSettings(); loadPricing();
+    loadRoutes(); loadKeys(); loadModels(); loadTokens(); loadLogs(); loadSettings(); loadPricing();
     loadTrend(TREND_PERIOD);
+    applyI18n();
     setInterval(()=>{ if(document.hidden) return; loadStatus(); }, 15000);
   }catch(e){ if(e.message==='unauthorized') showLogin(); }
 }
@@ -2388,7 +3266,16 @@ init();
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    navigator.serviceWorker.register('/sw.js').then((reg)=>{
+      // 主动检查更新: 避免旧缓存页面长期驻留
+      try{ reg.update(); }catch(e){}
+      // 新 SW 接管后自动刷新一次, 保证加载到最新前端
+      let reloaded=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        if(reloaded) return; reloaded=true;
+        location.reload();
+      });
+    }).catch(()=>{});
   });
 }
 </script>

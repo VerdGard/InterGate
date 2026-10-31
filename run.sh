@@ -1,12 +1,46 @@
 #!/usr/bin/env bash
 # InterGate 管理脚本(Termux / Linux 均可)
-# 用法: ./run.sh [start|stop|restart|status]   默认 start
+# 用法: ./run.sh [start|stop|restart|status|backup]   默认 start
 cd "$(dirname "$0")"
 PID_FILE="intergate.pid"
 PORT=51234
 WEB_PORT=51235
 
-# 端口占用检测: SO_REUSEADDR 避免 TIME_WAIT 误判
+# ══════════════════════════════════════════════════════════════
+# 输出美化 (仅在终端为 tty 时启用颜色, 重定向/日志时自动禁用)
+# ══════════════════════════════════════════════════════════════
+if [ -t 1 ]; then
+  C_RESET=$'\033[0m';    C_BOLD=$'\033[1m';    C_DIM=$'\033[2m'
+  C_RED=$'\033[31m';     C_GREEN=$'\033[32m';  C_YELLOW=$'\033[33m'
+  C_BLUE=$'\033[34m';    C_MAGENTA=$'\033[35m'; C_CYAN=$'\033[36m'
+  C_WHITE=$'\033[37m';   C_BG_GREEN=$'\033[42m'; C_BG_RED=$'\033[41m'
+  C_BG_YELLOW=$'\033[43m'; C_BG_CYAN=$'\033[46m'
+else
+  C_RESET=; C_BOLD=; C_DIM=; C_RED=; C_GREEN=; C_YELLOW=
+  C_BLUE=; C_MAGENTA=; C_CYAN=; C_WHITE=; C_BG_GREEN=; C_BG_RED=
+  C_BG_YELLOW=; C_BG_CYAN=
+fi
+
+say()  { printf '%b\n' "$*"; }
+hr()   { say "${C_DIM}┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄${C_RESET}"; }
+info() { say "  ${C_CYAN}▸${C_RESET} $*"; }
+ok()   { say "  ${C_GREEN}✔${C_RESET} $*"; }
+warn() { say "  ${C_YELLOW}⚠${C_RESET} $*"; }
+err()  { say "  ${C_RED}✘${C_RESET} $*"; }
+
+# ── ASCII 艺术字标题 (pyfiglet slant 风格) ────────────────────
+banner() {
+  [ -t 1 ] || return 0
+  printf '%s\n' "${C_CYAN}" \
+'    ____      __            ______      __' \
+'   /  _/___  / /____  _____/ ____/___ _/ /____' \
+'   / // __ \/ __/ _ \/ ___/ / __/ __ `/ __/ _ \' \
+' _/ // / / / /_/  __/ /  / /_/ / /_/ / /_/  __/' \
+'/___/_/ /_/\__/\___/_/   \____/\__,_/\__/\___/' \
+"${C_RESET}"
+}
+
+# ── 端口占用检测: SO_REUSEADDR 避免 TIME_WAIT 误判 ──────────
 ports_used() {
   python3 - "$PORT" "$WEB_PORT" <<'PY' 2>/dev/null
 import socket, sys
@@ -34,20 +68,45 @@ is_running() {
 
 start() {
   if is_running; then
-    echo "InterGate 已在运行(PID $(cat "$PID_FILE" 2>/dev/null || echo '?'))."
-    echo "如端口被其他程序占用, 请先 ./run.sh stop; 强制重启: ./run.sh restart"
+    say
+    hr
+    say "  ${C_BG_YELLOW}${C_BOLD}  ⚠  InterGate 已在运行  ${C_RESET}"
+    hr
+    warn "PID $(cat "$PID_FILE" 2>/dev/null || echo '?')"
+    warn "如端口被其他程序占用, 请先 ./run.sh stop; 强制重启: ./run.sh restart"
+    hr
+    say
     return 0
   fi
-  echo "启动 InterGate ..."
+
+  say
+  banner
+  say
+  hr
+  say "  ${C_BG_CYAN}${C_BOLD}  ◆  InterGate 启动中 ...  ${C_RESET}"
+  hr
   nohup python3 main.py > intergate.log 2>&1 &
   echo $! > "$PID_FILE"
   sleep 4
+
   if is_running; then
-    echo "已启动 (PID $(cat "$PID_FILE"))"
-    echo "  网关     -> http://127.0.0.1:$PORT/v1"
-    echo "  控制台   -> http://127.0.0.1:$WEB_PORT"
+    local pid
+    pid="$(cat "$PID_FILE")"
+    say
+    hr
+    say "  ${C_BG_GREEN}${C_BOLD}  ✔  InterGate 已启动  ${C_RESET}"
+    hr
+    ok "进程 PID  : ${C_BOLD}${C_YELLOW}${pid}${C_RESET}"
+    ok "网关地址  : ${C_BOLD}${C_GREEN}http://127.0.0.1:${PORT}/v1${C_RESET}"
+    ok "控制台    : ${C_BOLD}${C_GREEN}http://127.0.0.1:${WEB_PORT}${C_RESET}"
+    hr
+    say "  ${C_DIM}日志输出  : intergate.log${C_RESET}"
+    say "  ${C_DIM}停止服务  : ./run.sh stop${C_RESET}"
+    hr
+    say
   else
-    echo "启动失败, 请查看 intergate.log"; return 1
+    err "启动失败, 请查看 intergate.log"
+    return 1
   fi
 }
 
@@ -66,11 +125,15 @@ term_wait_kill() {
 }
 
 stop() {
+  say
+  hr
+  say "  ${C_BG_RED}${C_BOLD}  ■  InterGate 停止中 ...  ${C_RESET}"
+  hr
   # 1) PID 文件精确停止(优雅关闭优先)
   if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
     term_wait_kill "$(cat "$PID_FILE")"
     rm -f "$PID_FILE"
-    echo "已停止(PID 文件)"
+    ok "已停止 (PID 文件)"
   else
     # 2) 兜底: 按进程名清理
     local pids
@@ -78,10 +141,10 @@ stop() {
     if [ -n "$pids" ]; then
       for pid in $pids; do term_wait_kill "$pid"; done
       rm -f "$PID_FILE"
-      echo "已停止(按进程名清理)"
+      ok "已停止 (按进程名清理)"
     else
       rm -f "$PID_FILE"
-      echo "未在运行"
+      warn "未在运行"
     fi
   fi
   # 等待端口释放(最多 15 秒), 避免 restart 时 bind 失败
@@ -90,6 +153,8 @@ stop() {
     if ! ports_used; then break; fi
     sleep 1; i=$((i+1))
   done
+  hr
+  say
 }
 
 backup() {
@@ -115,8 +180,14 @@ PY
     tar -czf "$out" -C . backups/"$(basename "$out" .tgz).db" 2>/dev/null
   fi
   rm -f "backups/$(basename "$out" .tgz).db"
-  echo "备份完成 -> $out"
+  say
+  hr
+  say "  ${C_BG_GREEN}${C_BOLD}  ✔  备份完成  ${C_RESET}"
+  hr
+  ok "备份文件  : ${C_BOLD}${C_GREEN}${out}${C_RESET}"
   ls -lh "$out" | awk '{print "  " $5 "  " $9}'
+  hr
+  say
 }
 
 case "${1:-start}" in
@@ -124,7 +195,15 @@ case "${1:-start}" in
   stop)   stop ;;
   restart) stop; start ;;
   status)
-    if is_running; then echo "运行中 (PID $(cat "$PID_FILE" 2>/dev/null || echo '?'))"; else echo "未运行"; fi ;;
+    say
+    if is_running; then
+      say "  ${C_GREEN}●${C_RESET} ${C_BOLD}InterGate 运行中${C_RESET}  ${C_DIM}(PID $(cat "$PID_FILE" 2>/dev/null || echo '?'))${C_RESET}"
+      ok "网关   : http://127.0.0.1:${PORT}/v1"
+      ok "控制台 : http://127.0.0.1:${WEB_PORT}"
+    else
+      say "  ${C_RED}○${C_RESET} ${C_BOLD}InterGate 未运行${C_RESET}"
+    fi
+    say ;;
   backup) backup ;;
-  *) echo "用法: ./run.sh [start|stop|restart|status|backup]"; exit 1 ;;
+  *) say "  ${C_YELLOW}用法: ./run.sh [start|stop|restart|status|backup]${C_RESET}"; exit 1 ;;
 esac

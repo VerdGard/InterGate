@@ -26,3 +26,12 @@ Thumbs.db
 # Backup files
 *.bak
 *~
+
+# 测试与工具缓存
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 本地临时/误产物
+-H
+*.tgz

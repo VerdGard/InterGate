@@ -1,0 +1,15 @@
+services:
+  intergate:
+    build: .
+    container_name: intergate
+    restart: unless-stopped
+    ports:
+      - "51234:51234"   # 代理网关
+      - "51235:51235"   # Web 控制台
+    volumes:
+      - ./data:/app/data        # 持久化密钥/数据库
+      - ./backups:/app/backups  # 备份
+    environment:
+      - WEB_PASSWORD=            # 可选: 管理台密码(留空仅本机)
+    # 多 Worker 示例:
+    # command: ["python3", "main.py"]

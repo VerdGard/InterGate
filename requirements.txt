@@ -1,4 +1,5 @@
-fastapi>=0.110
-uvicorn>=0.29
-httpx>=0.27
-cryptography>=42.0
+# InterGate 运行时依赖(已按当前验证版本锁定)
+fastapi>=0.141,<0.142
+uvicorn>=0.52,<0.53
+httpx>=0.28,<0.29
+cryptography>=50.0,<51.0

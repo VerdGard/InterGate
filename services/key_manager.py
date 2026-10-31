@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from config import constants as C
 from crypto.aes import decrypt_plaintext, encrypt_plaintext
@@ -15,8 +15,11 @@ log = logging.getLogger("intergate.key_manager")
 
 
 class KeyManager:
-    def __init__(self, db: Database):
+    def __init__(self, db: Database,
+                 auto_disable_provider: Optional[Callable[[], bool]] = None):
         self._db = db
+        # 运行时开关提供器: 返回 auto_disable_enabled; 未注入时默认开启
+        self._auto_disable_provider = auto_disable_provider
         # RLock: list_active 在持锁状态会触发 _auto_recover->_persist_async,
         # 后者内部再次加锁, 需可重入以避免死锁
         self._lock = threading.RLock()
@@ -143,7 +146,12 @@ class KeyManager:
             return ""
 
     def record_success(self, key_id: str, latency_ms: int = 0) -> None:
-        """记录一次成功(只管理状态;请求/用量计数由 QuotaMonitor 负责)。"""
+        """记录一次成功(只管理状态;请求/用量计数由 QuotaMonitor 负责)。
+
+        不要把"手动停用/额度耗尽"的 Key 复活: 在途请求可能在管理员停用之后
+        才返回, 无条件置 ACTIVE 会覆盖管理动作。只有运行时冷却(ERROR)
+        才由成功请求提前解除。
+        """
         k = self.get(key_id)
         if not k:
             return
@@ -151,15 +159,19 @@ class KeyManager:
         k.last_used = now
         k.failure_count = 0
         k.cooldown_until = None
-        k.status = KeyStatus.ACTIVE
+        if k.status == KeyStatus.ERROR:
+            k.status = KeyStatus.ACTIVE      # 冷却中恢复
+        # INACTIVE(手动停用) / EXHAUSTED(额度耗尽) 保持原状
         self._persist_async(k)
 
-    def record_failure(self, key_id: str, category: str = "upstream") -> None:
+    def record_failure(self, key_id: str, category: str = "upstream",
+                      msg: str = "") -> None:
         """记录一次失败(只管理冷却/状态;请求/错误计数由 QuotaMonitor 负责)。
 
         分类:
         - quota: 额度耗尽, 长期停用(EXHAUSTED, 30 分钟冷却)
         - auth: 认证失败, 短冷却后自动恢复(ERROR)
+        - health: 后台健康巡检发现不可达, 连续失败达阈值才冷却
         - 其他(upstream/timeout/tpm): 连续失败达阈值才冷却; 未达阈值仅累计,
           避免单次 500 就永久停用。达到阈值置 ERROR 并冷却, 到期自动恢复。
         """
@@ -169,6 +181,18 @@ class KeyManager:
         now = int(time.time() * 1000)
         k.failure_count += 1
         k.last_used = now
+        if msg:
+            log.info("Key %s(%s) 失败 category=%s msg=%s",
+                     key_id, k.name, category, msg)
+        # auto_disable_enabled=False: 仅记录失败与日志, 不自动关闭 Key
+        # (额度告警仍由 QuotaMonitor 触发, 但不会置 EXHAUSTED)
+        if self._auto_disable_provider is not None:
+            auto = bool(self._auto_disable_provider())
+        else:
+            auto = True
+        if not auto:
+            self._persist_async(k)
+            return
         if category == "quota":
             k.status = KeyStatus.EXHAUSTED
             k.cooldown_until = now + C.QUOTA_EXHAUSTED_COOLDOWN_MS

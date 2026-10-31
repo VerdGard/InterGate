@@ -36,11 +36,17 @@ class ResponseCache:
         self.misses = 0
 
     @staticmethod
-    def make_key(method: str, path: str, body: bytes) -> str:
+    def make_key(method: str, path: str, body: bytes, scope: str = "") -> str:
+        """缓存键: method + path + body + 访问域(scope)。
+
+        scope 用于隔离不同租户/凭证的响应, 避免跨租户命中他人数据。
+        """
         h = hashlib.sha256()
         h.update(method.encode())
         h.update(b"\x00")
         h.update(path.encode())
+        h.update(b"\x00")
+        h.update(scope.encode())
         h.update(b"\x00")
         h.update(body)
         return h.hexdigest()

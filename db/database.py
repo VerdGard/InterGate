@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import atexit
+import datetime
 import json
 import logging
 import os
@@ -168,7 +169,42 @@ class Database:
                     capabilities_json TEXT NOT NULL DEFAULT '[]',
                     enabled INTEGER NOT NULL DEFAULT 1
                 );
+
+                -- 失败请求审计
+                CREATE TABLE IF NOT EXISTS audit_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ts INTEGER NOT NULL,
+                    path TEXT NOT NULL DEFAULT '',
+                    method TEXT NOT NULL DEFAULT '',
+                    status INTEGER NOT NULL DEFAULT 0,
+                    provider TEXT NOT NULL DEFAULT '',
+                    key_id TEXT NOT NULL DEFAULT '',
+                    model TEXT NOT NULL DEFAULT '',
+                    error TEXT NOT NULL DEFAULT '',
+                    body TEXT NOT NULL DEFAULT ''
+                );
+                CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_logs(ts);
+
+                -- 租户 Token(多租户额度凭证)
+                CREATE TABLE IF NOT EXISTS tokens (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL DEFAULT '',
+                    token TEXT NOT NULL DEFAULT '',
+                    enabled INTEGER NOT NULL DEFAULT 1,
+                    daily_quota_usd REAL NOT NULL DEFAULT 0,
+                    max_requests_per_minute INTEGER NOT NULL DEFAULT 0,
+                    models_json TEXT NOT NULL DEFAULT '[]',
+                    provider TEXT NOT NULL DEFAULT '',
+                    used_today_usd REAL NOT NULL DEFAULT 0,
+                    requests_today INTEGER NOT NULL DEFAULT 0,
+                    day_stamp TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL DEFAULT 'active',
+                    created_at INTEGER NOT NULL,
+                    last_used INTEGER NOT NULL DEFAULT 0,
+                    note TEXT NOT NULL DEFAULT ''
+                );
                 """
+                
             )
             self._conn.commit()
 
@@ -375,17 +411,48 @@ class Database:
         logs = [d for k, d in items if k == "log"]
         stats = [a for k, a in items if k == "stats"]
         keys = [d for k, d in items if k == "key"]
+        # 三类写各自独立提交: 某类失败(如单条违反约束)不能连带丢弃其它类
+        self._flush_group(wc, "log", logs,
+                          lambda rows: wc.executemany(
+                              _SQL_INSERT_LOG, [_log_row(d) for d in rows]))
+        self._flush_group(wc, "stats", stats,
+                          lambda rows: wc.executemany(_SQL_UPSERT_STATS, rows))
+        self._flush_group(wc, "key", keys,
+                          lambda rows: wc.executemany(
+                              _SQL_UPSERT_KEY, [_key_row(d) for d in rows]))
+
+    def _flush_group(self, wc: sqlite3.Connection, kind: str, rows: list,
+                     write) -> None:
+        """落库一类批量写。整批失败时逐条重试, 只丢弃真正非法的单条。"""
+        if not rows:
+            return
+        logr = logging.getLogger("intergate.db")
         try:
-            if logs:
-                wc.executemany(_SQL_INSERT_LOG, [_log_row(d) for d in logs])
-            if stats:
-                wc.executemany(_SQL_UPSERT_STATS, stats)
-            if keys:
-                wc.executemany(_SQL_UPSERT_KEY, [_key_row(d) for d in keys])
+            write(rows)
             wc.commit()
+            return
         except Exception as e:
-            logging.getLogger("intergate.db").warning("批量落库失败, 丢弃 %d 条: %s",
-                                                      len(items), e)
+            try:
+                wc.rollback()
+            except Exception:
+                pass
+            logr.warning("批量落库 %s 失败(%d 条), 降级逐条重试: %s",
+                         kind, len(rows), e)
+        dropped = 0
+        for row in rows:
+            try:
+                write([row])
+                wc.commit()
+            except Exception as e:
+                try:
+                    wc.rollback()
+                except Exception:
+                    pass
+                dropped += 1
+                if dropped <= 5:
+                    logr.warning("丢弃 1 条 %s 记录: %s", kind, e)
+        if dropped:
+            logr.warning("%s 共丢弃 %d/%d 条非法记录", kind, dropped, len(rows))
 
     def flush_now(self, timeout: float = 5.0) -> None:
         """冲刷积压的批量写并等待落库完成(供测试/优雅关闭同步检查)。"""
@@ -402,9 +469,11 @@ class Database:
                    provider: str = "", status: Optional[int] = None,
                    key_id: str = "", model: str = "",
                    ts_from: Optional[int] = None, ts_to: Optional[int] = None,
+                   before_ts: Optional[int] = None,
                    total: bool = False) -> List[Dict[str, Any]]:
         """查询请求日志,支持时间范围/提供商/状态/Key/模型过滤与分页。
 
+        before_ts: 游标分页(仅返回 ts < before_ts 的旧日志, 规避 OFFSET 深翻页慢)。
         total=True 时返回 (rows, count) 两元组。
         """
         where = "WHERE 1=1"
@@ -427,6 +496,9 @@ class Database:
         if ts_to is not None:
             where += " AND ts<=?"
             args.append(ts_to)
+        if before_ts is not None:
+            where += " AND ts<?"
+            args.append(before_ts)
         count = 0
         if total:
             with self._lock:
@@ -645,6 +717,19 @@ class Database:
             self._conn.commit()
             return cur.rowcount
 
+    def acknowledge_alert(self, alert_id: int) -> bool:
+        with self._lock:
+            cur = self._conn.execute(
+                "UPDATE alerts SET acknowledged=1 WHERE id=?", (alert_id,))
+            self._conn.commit()
+            return cur.rowcount > 0
+
+    def clear_alerts(self) -> int:
+        with self._lock:
+            cur = self._conn.execute("DELETE FROM alerts")
+            self._conn.commit()
+            return cur.rowcount
+
     # ---------- model cache ----------
     def save_model_cache(self, models: List[Dict[str, Any]]) -> int:
         """全量覆盖模型缓存表(同步后调用)。"""
@@ -706,6 +791,94 @@ class Database:
             self._conn.commit()
 
 
+    # ---------- 租户 Token ----------
+    def list_tokens(self) -> List[Dict[str, Any]]:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM tokens ORDER BY created_at DESC").fetchall()
+        return [dict(r) for r in rows]
+
+    def get_token(self, token_id: str) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM tokens WHERE id=?", (token_id,)).fetchone()
+        return dict(row) if row else None
+
+    def upsert_token(self, d: Dict[str, Any]) -> None:
+        with self._lock:
+            self._conn.execute(
+                """
+                INSERT INTO tokens (id, name, token, enabled, daily_quota_usd,
+                    max_requests_per_minute, models_json, provider,
+                    used_today_usd, requests_today, day_stamp, status,
+                    created_at, last_used, note)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ON CONFLICT(id) DO UPDATE SET
+                    name=excluded.name, token=excluded.token,
+                    enabled=excluded.enabled,
+                    daily_quota_usd=excluded.daily_quota_usd,
+                    max_requests_per_minute=excluded.max_requests_per_minute,
+                    models_json=excluded.models_json,
+                    provider=excluded.provider,
+                    status=excluded.status, note=excluded.note
+                """,
+                (d["id"], d["name"], d["token"], 1 if d["enabled"] else 0,
+                 d["daily_quota_usd"], d["max_requests_per_minute"],
+                 json.dumps(d["models"], ensure_ascii=False), d["provider"],
+                 d["used_today_usd"], d["requests_today"], d["day_stamp"],
+                 d["status"], d["created_at"], d["last_used"], d["note"]),
+            )
+            self._conn.commit()
+
+    def delete_token(self, token_id: str) -> bool:
+        with self._lock:
+            cur = self._conn.execute("DELETE FROM tokens WHERE id=?", (token_id,))
+            self._conn.commit()
+            return cur.rowcount > 0
+
+    def record_token_usage(self, token_id: str, cost_usd: float,
+                           requests: int = 1) -> None:
+        """按天累计租户用量, 跨天自动归零。"""
+        today = datetime.date.today().isoformat()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT used_today_usd, requests_today, day_stamp "
+                "FROM tokens WHERE id=?", (token_id,)).fetchone()
+            if not row:
+                return
+            used = 0.0 if row["day_stamp"] != today else float(row["used_today_usd"])
+            req = 0 if row["day_stamp"] != today else int(row["requests_today"])
+            self._conn.execute(
+                "UPDATE tokens SET used_today_usd=?, requests_today=?, "
+                "day_stamp=?, last_used=? WHERE id=?",
+                (used + cost_usd, req + requests, today,
+                 int(time.time() * 1000), token_id))
+            self._conn.commit()
+
+    def insert_audit(self, d: Dict[str, Any]) -> None:
+        with self._lock:
+            self._conn.execute(
+                "INSERT INTO audit_logs(ts, path, method, status, provider, "
+                "key_id, model, error, body) VALUES(?,?,?,?,?,?,?,?,?)",
+                (int(d["ts"]), d["path"], d["method"], int(d["status"]),
+                 d.get("provider", ""), d.get("key_id", ""), d.get("model", ""),
+                 d.get("error", "")[:500], d.get("body", "")),
+            )
+            self._conn.commit()
+
+    def query_audit(self, limit: int = 100) -> List[Dict[str, Any]]:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM audit_logs ORDER BY ts DESC LIMIT ?",
+                (limit,)).fetchall()
+        return [dict(r) for r in rows]
+
+    def clear_audit(self) -> int:
+        with self._lock:
+            cur = self._conn.execute("DELETE FROM audit_logs")
+            self._conn.commit()
+            return cur.rowcount
+
 _SQL_INSERT_LOG = """
     INSERT INTO request_logs (
         ts, path, method, status, provider, key_id, model, latency_ms,
@@ -751,11 +924,13 @@ _SQL_UPSERT_KEY = """
 
 
 def _log_row(d: Dict[str, Any]) -> tuple:
-    return (d["ts"], d["path"], d["method"], d["status"], d.get("provider", ""),
-            d.get("key_id", ""), d.get("model", ""), d.get("latency_ms", 0),
+    # model 等列在 schema 中是 NOT NULL, 而 /v1/models 等请求没有 model 字段,
+    # 传 None 会触发 IntegrityError 并(修复前)连带丢弃整批写。
+    return (d["ts"], d["path"], d["method"], d["status"], d.get("provider") or "",
+            d.get("key_id") or "", d.get("model") or "", d.get("latency_ms", 0),
             d.get("prompt_tokens", 0), d.get("completion_tokens", 0),
             d.get("total_tokens", 0), 1 if d.get("cached") else 0,
-            d.get("error", ""))
+            d.get("error") or "")
 
 
 def _key_row(d: Dict[str, Any]) -> tuple:
@@ -784,6 +959,7 @@ def _flush_all_instances() -> None:
 
 # SQLite 写操作不保证在 atexit/退出时自动执行, 注册兜底冲刷
 atexit.register(_flush_all_instances)
+
 
 
 def get_db() -> Database:

@@ -1,7 +1,7 @@
 """全局常量(对齐 RelayGo / InterGate Android 版)"""
 
 APP_NAME = "InterGate"
-APP_VERSION = "1.1.1"
+APP_VERSION = "1.1.3"
 APP_SLOGAN = "AI 网关,随时就绪"
 
 # 网关监听
@@ -67,6 +67,9 @@ PROVIDER_BASE_URLS = {
     "azure": "",
     "custom": "",
 }
+
+# Anthropic 必须的协议版本头(客户端未带时补默认值)
+ANTHROPIC_VERSION = "2023-06-01"
 
 # 接口路径 -> 提供商
 PATH_TO_PROVIDER = {

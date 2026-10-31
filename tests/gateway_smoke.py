@@ -87,12 +87,13 @@ def make_gateway(settings: UserSettings):
 
 def test_gateway_proxy():
     print("gateway 代理转发")
-    gw, _ = make_gateway(UserSettings())
+    gw, db = make_gateway(UserSettings())
     c = TestClient(gw.app)
     r = c.post("/v1/chat/completions",
                json={"model": "gpt-4o", "messages": [{"role": "user", "content": "hi"}]})
     check("转发 200", r.status_code == 200, str(r.status_code))
     check("返回体透传", r.json().get("choices", [{}])[0].get("message", {}).get("content") == "hi")
+    db.flush_now()   # 冲刷批量异步写, 使统计/日志立即可见
     check("用量已统计", gw.quota.summary(7)["total"]["requests"] == 1)
     check("日志已记录", len(gw.db.query_logs()) == 1)
     # base_url 含 /v1 时不应产生双 /v1
@@ -108,7 +109,8 @@ def test_gateway_proxy():
 
     # 健康检查
     check("health", c.get("/health").json()["status"] == "ok")
-    check("version", c.get("/relay/version").json()["version"])
+    # 管理端点匿名访问应被拒绝(未配置网关密钥时不再放行)
+    check("version 匿名 401", c.get("/relay/version").status_code == 401)
 
     # 流式
     r3 = c.post("/v1/chat/completions",

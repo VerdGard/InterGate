@@ -17,6 +17,7 @@ from config import constants as C
 from config.settings import UserSettings
 from db.database import Database, get_db
 from models.api_key import ApiKey, KeyStatus
+from services.token_manager import TokenManager
 from models.request_log import RequestLog
 from providers.registry import (
     candidate_providers, detect_provider, endpoint_kind, resolve_base_url,
@@ -46,21 +47,36 @@ class GatewayApp:
         self.upstream = UpstreamClient(
             max_connections=settings.upstream_max_connections,
             max_keepalive=settings.upstream_max_keepalive,
+            max_response=settings.upstream_max_response_bytes,
         )
-        self.key_manager = KeyManager(self.db)
+        self.key_manager = KeyManager(
+            self.db,
+            auto_disable_provider=lambda: getattr(
+                self.settings, "auto_disable_enabled", True),
+        )
         self.load_balancer = LoadBalancer()
         self.rate_limiter = RateLimiter(settings)
-        self.cache = ResponseCache(
-            enabled=settings.cache_enabled,
-            ttl_seconds=settings.cache_ttl_seconds,
-            max_entries=settings.cache_max_entries,
-        )
+        if settings.shared_cache_enabled:
+            from services.shared_state import SharedCache
+            self.cache = SharedCache(
+                ttl_seconds=settings.cache_ttl_seconds,
+                max_entries=settings.cache_max_entries,
+            )
+        else:
+            self.cache = ResponseCache(
+                enabled=settings.cache_enabled,
+                ttl_seconds=settings.cache_ttl_seconds,
+                max_entries=settings.cache_max_entries,
+            )
         self.quota = QuotaMonitor(
             self.db,
             warn_threshold=settings.quota_warn_threshold,
             warn_enabled=settings.quota_warn_enabled,
+            auto_disable_provider=lambda: getattr(
+                self.settings, "auto_disable_enabled", True),
         )
         self.syncer = ModelSyncer(self.upstream, db=self.db)
+        self.tokens = TokenManager(self.db)
         self.quota.on_key_changed = lambda k: self.key_manager._persist_async(k)
         # 附加网关密钥缓存: 鉴权热路径避免每请求读库, web 控制台改动时失效
         self._gkeys_cache: Optional[List[Dict[str, Any]]] = None
@@ -80,6 +96,10 @@ class GatewayApp:
 
     # ================= 请求处理 =================
     async def _handle(self, request: Request, path: str) -> Response:
+        # 查询串必须参与转发: /v1beta/models?alt=sse、Azure 的 ?api-version=
+        # 等都靠它。此前只取 path, 这些参数会被静默丢弃。
+        if request.url.query:
+            path = f"{path}?{request.url.query}"
         if request.method == "OPTIONS":
             return Response(status_code=204, headers=_cors_headers())
 
@@ -95,6 +115,14 @@ class GatewayApp:
         perm = self._authorize(request)
         if perm is None:
             return self._error(401, "未授权:网关 Key 无效", "authentication_error")
+
+        # 管理接口: 必须持有真实凭证。匿名放行(未配置主 Key)只覆盖代理路径,
+        # 否则局域网内任何人可读取 Key 清单/统计。
+        if path in (C.VERSION_PATH, C.STATS_PATH, C.REPORT_PATH,
+                    C.CACHE_STATS_PATH, C.METRICS_PATH):
+            if perm.get("anonymous") or perm.get("permission") == "proxy":
+                return self._error(401, "未授权: 管理接口需要网关密钥",
+                                   "authentication_error")
 
         # 管理接口(需要网关 Key)
         if path == C.VERSION_PATH:
@@ -125,14 +153,33 @@ class GatewayApp:
         start = time.monotonic()
         client_ip = request.client.host if request.client else ""
 
+        # 提供商须在使用前确定: 下方租户的"提供商限定"检查会读取 provider
+        header_provider = request.headers.get(C.PROVIDER_HEADER)
+        provider = entry["provider"] if entry else detect_provider(
+            path, real_model, header_provider)
+
         # 限流(IP / 全局)
         ok, retry_after, reason = self.rate_limiter.check(client_ip, None)
         if not ok:
             return self._error(429, f"请求过于频繁({reason})", "rate_limit_exceeded",
                                retry_after=retry_after)
 
-        header_provider = request.headers.get(C.PROVIDER_HEADER)
-        provider = entry["provider"] if entry else detect_provider(path, real_model, header_provider)
+        # 租户 Token: RPM + 日额度预检 + 提供商限定
+        tenant = perm.get("tenant") if perm else None
+        if tenant is not None:
+            ok2, ra2 = self.rate_limiter.check_token_rpm(
+                tenant.id, tenant.max_requests_per_minute)
+            if not ok2:
+                return self._error(429, "租户请求过于频繁", "rate_limit_exceeded",
+                                   retry_after=ra2)
+            est_cost = self._tenant_est_cost(real_model, body_obj)
+            reason2 = self.tokens.check_quota(tenant, est_cost)
+            if reason2:
+                return self._error(403, "租户日额度已用尽", "quota_exhausted")
+            if tenant.provider and provider != tenant.provider:
+                return self._error(403,
+                                   f"租户限定提供商 {tenant.provider}, 收到 {provider}",
+                                   "permission_denied")
 
         # /v1/models 优先返回本地同步列表
         if path == C.MODELS_PATH and model is None:
@@ -147,9 +194,12 @@ class GatewayApp:
             return self._error(503, "没有可用的上游 Key", "no_available_key")
 
         # 缓存命中(仅幂等请求)
+        # scope 必须包含租户/凭证维度: 否则不同租户的相同提问会命中同一份响应,
+        # 造成跨租户数据泄露。provider 也纳入, 避免跨上游复用。
         cache_key = None
         if request.method in ("GET", "POST") and not _is_stream_request(body_obj):
-            cache_key = self.cache.make_key(request.method, path, body)
+            cache_scope = f"{tenant.id if tenant else ''}|{perm.get('name', '')}|{provider}"
+            cache_key = self.cache.make_key(request.method, path, body, cache_scope)
             hit = self.cache.get(cache_key)
             if hit:
                 status, headers, cached_body = hit
@@ -205,7 +255,8 @@ class GatewayApp:
                 continue
             # base_url 可能已含版本前缀(如 /v1),与 path 去重拼接,避免双 /v1
             url = _join_base_and_path(base, path)
-            upstream_headers = self._build_upstream_headers(request, plain_key)
+            upstream_headers = self._build_upstream_headers(request, plain_key,
+                                                            key.provider)
 
             self.load_balancer.report_active(key.id, 1)
             try:
@@ -225,7 +276,7 @@ class GatewayApp:
                     used_key = key
                     return await self._stream_response(
                         request, path, model, real_model, key, start, status,
-                        u_headers, gen, usage, cache_key)
+                        u_headers, gen, usage, cache_key, tenant=tenant)
                 else:
                     result = await self.upstream.forward(
                         "POST" if (body_obj or upstream_body) else request.method,
@@ -242,6 +293,7 @@ class GatewayApp:
                             self.cache.put(cache_key, result.status,
                                            result.headers, result.body)
                         self._quota_record(key, result.status, result.usage, real_model)
+                        self._record_tenant(tenant, real_model, result.usage)
                         self._log(request, path, real_model, result.status, key.id,
                                   latency_ms=int((time.monotonic() - start) * 1000),
                                   usage=result.usage)
@@ -271,14 +323,17 @@ class GatewayApp:
         self._log(request, path, real_model, status, used_key.id if used_key else "",
                   latency_ms=int((time.monotonic() - start) * 1000),
                   error=msg)
+        self._audit_failure(request, path, real_model, status, used_key,
+                            category, msg, body)
         return self._error(status, msg, category, body=last_error.body if last_error else b"")
 
     # ================= 内部工具 =================
     async def _read_body(self, request: Request) -> Optional[bytes]:
+        limit = self.settings.upstream_max_request_bytes
         content_length = request.headers.get("content-length")
         if content_length:
             try:
-                if int(content_length) > C.MAX_REQUEST_BODY_BYTES:
+                if int(content_length) > limit:
                     return None
             except (TypeError, ValueError):
                 pass  # 非法 content-length 交由实际 body 长度判断
@@ -286,7 +341,7 @@ class GatewayApp:
             body = await request.body()
         except Exception:
             return b""
-        if len(body) > C.MAX_REQUEST_BODY_BYTES:
+        if len(body) > limit:
             return None
         return body
 
@@ -313,11 +368,13 @@ class GatewayApp:
         # 落到下方权限校验, 被 readonly/models 限制拦截, 导致关掉鉴权后
         # 反而拉取不了模型。关闭开关即代表不校验任何密钥。
         if not self.settings.gateway_key_enabled:
-            return {"permission": "full", "name": "", "models": []}
-        # 未配置主 Key: 未带 Key 放行, 带 Key 仍可走附加密钥校验
+            return {"permission": "full", "name": "", "models": [], "anonymous": True}
+        # 未配置主 Key: 未带 Key 放行(标记 anonymous, 管理端点据此拒绝),
+        # 带 Key 仍可走附加密钥校验
         if not expected:
             if not presented:
-                return {"permission": "full", "name": "", "models": []}
+                return {"permission": "full", "name": "", "models": [],
+                        "anonymous": True}
         elif presented and presented == expected:
             return {"permission": "full", "name": "主Key", "models": []}
 
@@ -325,7 +382,12 @@ class GatewayApp:
         now_m = time.monotonic()
         if self._gkeys_cache is None or now_m - self._gkeys_ts > 5.0:
             try:
-                self._gkeys_cache = self.db.get_setting("gateway_keys", []) or []
+                from services.secret import decrypt_field
+                raw = self.db.get_setting("gateway_keys", []) or []
+                self._gkeys_cache = [
+                    dict({**gk, "key": decrypt_field(str(gk.get("key", "")))})
+                    for gk in raw
+                ]
             except Exception:
                 self._gkeys_cache = []
             self._gkeys_ts = now_m
@@ -339,6 +401,30 @@ class GatewayApp:
                     "name": gk.get("name", ""),
                     "models": [str(m) for m in (gk.get("models") or [])],
                 }
+        # 租户 Token(多租户额度凭证; 受开关控制)
+        # permission 为 proxy: 只允许代理调用, 不允许访问管理端点
+        if self.settings.tokens_enabled and presented:
+            tenant = self.tokens.resolve(presented)
+            if tenant is not None:
+                return {
+                    "permission": "proxy",
+                    "name": tenant.name,
+                    "models": [str(m) for m in tenant.models],
+                    "tenant": tenant,
+                }
+        # JWT 网关鉴权(可选): 由 jwt_secret 签发的 HS256 令牌
+        if self.settings.jwt_enabled and self.settings.jwt_secret and presented:
+            try:
+                from services.jwt import verify_token
+                jp = verify_token(self.settings.jwt_secret, presented)
+                if jp is not None:
+                    return {
+                        "permission": "full",
+                        "name": str(jp.get("sub") or "JWT"),
+                        "models": [str(m) for m in (jp.get("models") or [])],
+                    }
+            except Exception:
+                pass
         return None
 
     def invalidate_gateway_keys(self) -> None:
@@ -407,7 +493,8 @@ class GatewayApp:
             return None  # 路由的 Key 全不可用,回退默认策略
         return active
 
-    def _build_upstream_headers(self, request: Request, plain_key: str) -> Dict[str, str]:
+    def _build_upstream_headers(self, request: Request, plain_key: str,
+                                provider: str = "") -> Dict[str, str]:
         headers = {}
         for name, value in request.headers.items():
             lname = name.lower()
@@ -415,8 +502,20 @@ class GatewayApp:
                          "x-relay-provider", "x-relay-key", "x-relay-cache",
                          "x-gateway-key", "x-api-key"):
                 continue
+            # 不要把客户端/代理链路的内部头原样带给上游(信息泄露, 且可能
+            # 与上游自身的鉴权/版本协商冲突)。
+            if lname.startswith("x-forwarded-") or lname in (
+                    "forwarded", "via", "x-real-ip", "x-original-forwarded-for"):
+                continue
+            # 提供商专属协议头: 只有 anthropic 上游才带, 否则会污染其它上游
+            if lname == "anthropic-version" and provider != "anthropic":
+                continue
             headers[name] = value
+        # 上游凭证按提供商写入: Anthropic 用 x-api-key, 其余用 Bearer
         headers["Authorization"] = f"Bearer {plain_key}"
+        if provider == "anthropic":
+            headers["x-api-key"] = plain_key
+            headers.setdefault("anthropic-version", C.ANTHROPIC_VERSION)
         return headers
 
     async def _forward_stream(self, url: str, headers: Dict[str, str],
@@ -434,22 +533,63 @@ class GatewayApp:
                                status: int, u_headers: Dict[str, str],
                                gen: AsyncGenerator[bytes, None],
                                usage: Dict[str, Any],
-                               cache_key: Optional[str]) -> Response:
+                               cache_key: Optional[str],
+                               tenant=None) -> Response:
         resp_headers = _upstream_headers(u_headers)
         resp_headers.setdefault("Content-Type", "text/event-stream; charset=utf-8")
         resp_headers.setdefault("Cache-Control", "no-cache")
         resp_headers.setdefault("X-Accel-Buffering", "no")
 
         async def response_gen() -> AsyncGenerator[bytes, None]:
+            # 上游读取放在独立任务里, 主循环只在"队列空闲"上等待超时。
+            # 早前直接用 asyncio.wait_for(gen.__anext__(), timeout=15):
+            # 超时会取消 __anext__, 使异步生成器被关闭, 下一次 __anext__ 抛
+            # StopAsyncIteration, 于是上游只是"思考得久"就被判定为流结束,
+            # 客户端拿到空流(长思考模型/大 prompt 必然触发)。
+            queue: asyncio.Queue = asyncio.Queue()
+            _END = object()
+
+            async def _reader() -> None:
+                try:
+                    async for chunk in gen:
+                        await queue.put(chunk)
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:      # 上游读失败: 交给消费端处理
+                    await queue.put(exc)
+                finally:
+                    await queue.put(_END)
+
+            reader = asyncio.create_task(_reader())
             try:
-                async for chunk in gen:
-                    _collect_usage(usage, chunk)
-                    yield chunk
+                while True:
+                    try:
+                        item = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    except asyncio.TimeoutError:
+                        # 上游 15s 无数据: 发 SSE 注释心跳保活, 继续等(不终止流)
+                        yield b": keepalive\n\n"
+                        continue
+                    if item is _END:
+                        break
+                    if isinstance(item, Exception):
+                        log.warning("上游流读取中断: %s", item)
+                        break
+                    _collect_usage(usage, item)
+                    yield item
             except (asyncio.CancelledError, GeneratorExit):
                 # 客户端断开:终止上游流,释放连接,避免泄漏
-                await gen.aclose()
                 raise
             finally:
+                if not reader.done():
+                    reader.cancel()
+                try:
+                    await reader
+                except (asyncio.CancelledError, Exception):
+                    pass
+                try:
+                    await gen.aclose()
+                except Exception:
+                    pass
                 self.key_manager.record_success(
                     key.id,
                     latency_ms=int((time.monotonic() - start) * 1000),
@@ -457,6 +597,7 @@ class GatewayApp:
                 self.load_balancer.report_latency(
                     key.id, (time.monotonic() - start) * 1000)
                 self._quota_record(key, status, usage, real_model)
+                self._record_tenant(tenant, real_model, usage)
                 self._log(request, path, real_model, status, key.id,
                           latency_ms=int((time.monotonic() - start) * 1000),
                           usage=usage)
@@ -468,6 +609,31 @@ class GatewayApp:
     def _after_failure(self, key: ApiKey, category: str) -> None:
         self.key_manager.record_failure(key.id, category)
         self._quota_record(key, 500 if category != "quota" else 429, {})
+
+    def _tenant_est_cost(self, model: str, body_obj) -> float:
+        """按请求体估算一次请求的美元成本(用于租户额度预检)。"""
+        try:
+            from config.pricing import estimate_cost
+            tokens = _estimate_tokens(body_obj)
+            prompt = tokens // 2
+            completion = tokens - prompt
+            cost, _, _ = estimate_cost(model, prompt, completion)
+            return cost
+        except Exception:
+            return 0.0
+
+    def _record_tenant(self, tenant, model: str, usage: Dict[str, Any]) -> None:
+        """转发成功后按真实 usage 累计租户用量。"""
+        if tenant is None:
+            return
+        try:
+            from config.pricing import estimate_cost
+            prompt = int(usage.get("prompt_tokens", 0))
+            completion = int(usage.get("completion_tokens", 0))
+            cost, _, _ = estimate_cost(model, prompt, completion)
+            self.tokens.record_usage(tenant, cost)
+        except Exception as e:
+            log.debug("记录租户用量失败: %s", e)
 
     def _quota_record(self, key: ApiKey, status: int, usage: Dict[str, Any],
                       model: str = "") -> None:
@@ -484,6 +650,29 @@ class GatewayApp:
                     log.debug("估算费用失败 model=%s: %s", model, e)
                     cost_usd = 0.0
         self.quota.record(key, status, usage, cost_usd=cost_usd)
+
+    def _audit_failure(self, request, path, model, status, key,
+                      category, msg, body) -> None:
+        """失败请求审计: 开启时记录失败请求体摘要, 便于排查问题。"""
+        if not self.settings.audit_failures_enabled:
+            return
+        try:
+            snippet = body.decode("utf-8", errors="replace")
+        except Exception:
+            snippet = ""
+        try:
+            self.db.insert_audit({
+                "ts": int(time.time() * 1000),
+                "path": path, "method": request.method,
+                "status": status if isinstance(status, int) else 0,
+                "provider": detect_provider(path, model,
+                                            request.headers.get(C.PROVIDER_HEADER)),
+                "key_id": getattr(key, "id", ""),
+                "model": model or "", "error": msg or category or "",
+                "body": snippet[:self.settings.audit_body_snippet_bytes],
+            })
+        except Exception as e:
+            log.debug("写入审计失败: %s", e)
 
     def _log(self, request: Request, path: str, model: str, status: int,
              key_id: str, cached: bool = False, latency_ms: int = 0,
@@ -561,6 +750,10 @@ class GatewayApp:
             lbl = f"{{{labels}}}" if labels else ""
             lines.append(f"{name}{lbl} {val}")
 
+        import socket as _socket
+        _m("intergate_build_info", 1,
+           "构建信息(网关版本/实例主机)", "gauge",
+           labels=f'version="{C.APP_VERSION}",instance="{_socket.gethostname()}"')
         _m("intergate_keys_total", b["total_keys"], "Key 总数")
         _m("intergate_keys_active", b["active_keys"], "可用 Key 数")
         _m("intergate_requests_today", b["requests_today"],
